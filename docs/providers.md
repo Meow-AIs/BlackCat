@@ -17,6 +17,46 @@ BlackCat supports 8 LLM providers through the unified `Provider` interface:
 | Kimi | Cloud | Yes | No | No | Yes |
 | xAI | Cloud | Yes | No | No | Yes |
 
+## Model Naming Format
+
+BlackCat uses the `provider/model` naming convention:
+
+| Format | Example | When to Use |
+|--------|---------|-------------|
+| `model-id` | `claude-sonnet-4-6` | Direct provider (Anthropic, OpenAI) |
+| `provider/model` | `anthropic/claude-sonnet-4-6` | Explicit provider selection |
+| `openrouter/provider/model` | `openrouter/anthropic/claude-opus-4-6` | Route through OpenRouter |
+
+### Examples
+
+```yaml
+# Direct Anthropic
+model: "claude-sonnet-4-6"
+
+# Explicit provider
+model: "anthropic/claude-sonnet-4-6"
+
+# Via OpenRouter (access any model with one API key)
+model: "openrouter/anthropic/claude-opus-4-6"
+model: "openrouter/openai/gpt-5.4"
+model: "openrouter/google/gemini-2.5-pro"
+model: "openrouter/deepseek/deepseek-chat"
+model: "openrouter/meta-llama/llama-4-maverick"
+
+# Local via Ollama
+model: "ollama/qwen2.5:72b"
+model: "ollama/deepseek-r1:14b"
+model: "ollama/llama3.3:70b"
+```
+
+Users can set the model in config or override per-session:
+
+```
+/model anthropic/claude-opus-4-6
+/model openrouter/google/gemini-2.5-pro
+/model ollama/qwen2.5:72b
+```
+
 ## Provider Interface
 
 Every provider implements this interface (defined in `internal/llm/provider.go`):
@@ -69,9 +109,9 @@ providers:
   anthropic:
     api_key: ""   # leave empty when using secret store or env var
     models:
-      - claude-sonnet-4-6
-      - claude-haiku-4-5
-      - claude-opus-4-5
+      - claude-opus-4-6        # Flagship — deepest reasoning, best quality
+      - claude-sonnet-4-6      # Best value — excellent coding, fast
+      - claude-haiku-4-5       # Fast & cheap — sub-agents, classification
 ```
 
 **3. Recommended model routing:**
@@ -80,6 +120,7 @@ providers:
 |------|-------|----------|
 | Main | `claude-sonnet-4-6` | Reasoning, code generation, vision |
 | Auxiliary | `claude-haiku-4-5` | Summarization, classification, sub-agents |
+| Deep reasoning | `claude-opus-4-6` | Complex architecture, research, analysis |
 
 **Prompt caching**: BlackCat automatically applies the `system_and_3` caching strategy, placing cache breakpoints on the system message and the last 3 conversation messages. This can reduce costs by 50-90% on long sessions.
 
@@ -106,18 +147,22 @@ providers:
   openai:
     api_key: ""   # leave empty when using secret store or env var
     models:
-      - gpt-4.1
-      - gpt-4.1-mini
-      - o3
-      - o4-mini
+      - gpt-5.4           # Flagship — most capable
+      - gpt-4.1           # 1M context, best for coding
+      - gpt-4.1-mini      # Cheap — good balance of cost and quality
+      - gpt-4.1-nano      # Cheapest — lightweight tasks
+      - o4-mini           # Reasoning — chain-of-thought
+      - o3                # Deep reasoning — complex analysis
 ```
 
 **3. Model routing:**
 
-| Tier | Model |
-|------|-------|
-| Main | `gpt-4.1` |
-| Auxiliary | `gpt-4.1-mini` |
+| Tier | Model | Use Case |
+|------|-------|----------|
+| Main | `gpt-4.1` | 1M context, best for coding tasks |
+| Auxiliary | `gpt-4.1-mini` | Cheap, good for sub-agents and summarization |
+| Flagship | `gpt-5.4` | Most capable, complex reasoning |
+| Reasoning | `o4-mini` / `o3` | Chain-of-thought, deep analysis |
 
 ### Ollama (Local / Air-Gapped)
 
@@ -136,13 +181,18 @@ curl -fsSL https://ollama.com/install.sh | sh
 **2. Pull models:**
 
 ```bash
-# General purpose
-ollama pull llama3.2
+# Recommended: Qwen 2.5 (best open-source for coding)
+ollama pull qwen2.5:72b          # Best quality (requires 48GB+ RAM)
+ollama pull qwen2.5:32b          # Good balance (requires 24GB+ RAM)
+ollama pull qwen2.5:7b           # Fast & lightweight
 
-# Code-focused
-ollama pull codellama
+# Alternative: DeepSeek (strong reasoning)
+ollama pull deepseek-r1:14b
 
-# Embedding (for local memory)
+# Alternative: Llama 4 (Meta's latest)
+ollama pull llama4-scout:17b
+
+# Embedding
 ollama pull nomic-embed-text
 ```
 
@@ -152,13 +202,13 @@ ollama pull nomic-embed-text
 providers:
   ollama:
     base_url: "http://localhost:11434"
-    models:
-      - llama3.2
-      - codellama
-      - nomic-embed-text
 
+# Recommended Ollama setup
+model: "ollama/qwen2.5:32b"              # Main
+agent:
+  sub_agent_model: "ollama/qwen2.5:7b"   # Auxiliary (cheap)
 memory:
-  embedding: "ollama"     # use Ollama for embeddings instead of bundled ONNX
+  embedding: "ollama"                      # Use Ollama for embeddings
 ```
 
 **4. Verify Ollama is running:**
@@ -188,6 +238,18 @@ export OPENROUTER_API_KEY="sk-or-..."
 
 OpenRouter supports dynamic model fetching, so you do not need to specify models explicitly.
 
+**3. Model examples** (use the `openrouter/provider/model` format):
+
+```yaml
+# Access any model with one API key
+model: "openrouter/anthropic/claude-opus-4-6"    # Anthropic via OpenRouter
+model: "openrouter/openai/gpt-5.4"               # OpenAI via OpenRouter
+model: "openrouter/google/gemini-2.5-pro"         # Google via OpenRouter
+model: "openrouter/deepseek/deepseek-chat"        # DeepSeek via OpenRouter
+model: "openrouter/meta-llama/llama-4-maverick"   # Meta via OpenRouter
+model: "openrouter/moonshotai/kimi-k2.5"          # Kimi via OpenRouter
+```
+
 ### Groq
 
 Ultra-fast inference for open-source models. Also provides the Whisper API for voice transcription.
@@ -197,14 +259,19 @@ Ultra-fast inference for open-source models. Also provides the Whisper API for v
 **2. Configure:**
 
 ```bash
+# Available on Groq (ultra-fast inference)
+# Chat: llama-4-scout-17b, llama-3.3-70b-versatile, deepseek-r1-distill-llama-70b
+# Voice: whisper-large-v3-turbo (FREE)
 export GROQ_API_KEY="gsk_..."
 ```
 
-Groq is also used for voice transcription via the `transcribe_audio` tool (Whisper Large V3 Turbo model). No additional configuration is needed beyond setting the API key.
+Groq is also used for voice transcription via the `transcribe_audio` tool (Whisper Large V3 Turbo model, free). No additional configuration is needed beyond setting the API key.
 
 > **Note**: Groq, ZAI, Kimi, and xAI providers use environment variables for API keys. They do not have dedicated entries in the `providers` section of `config.yaml`.
 
-### ZAI
+### ZAI (Z.ai / GLM)
+
+Models: `glm-5` (745B MoE, flagship), `glm-5-turbo` (agent-optimized), `glm-4.7-flash` (FREE).
 
 ```bash
 export ZAI_API_KEY="..."
@@ -212,11 +279,15 @@ export ZAI_API_KEY="..."
 
 ### Kimi (Moonshot)
 
+Models: `kimi-k2.5` (256K context, agent swarm capable), `kimi-k2.5-mini`.
+
 ```bash
 export KIMI_API_KEY="..."
 ```
 
 ### xAI (Grok)
+
+Models: `grok-4-1-fast-latest` (flagship), `grok-4-heavy` (deep reasoning), `grok-code-fast-1` (coding), `grok-3-mini` (cheap).
 
 ```bash
 export XAI_API_KEY="xai-..."
@@ -331,8 +402,9 @@ When the budget is exceeded, `IsOverBudget()` returns true and the agent can tak
 Use the `/model` slash command to switch models during a session:
 
 ```
-/model anthropic/claude-opus-4-5    # switch to Opus for deep reasoning
-/model ollama/llama3.2              # switch to local model
+/model anthropic/claude-opus-4-6    # switch to Opus for deep reasoning
+/model ollama/qwen2.5:32b           # switch to local model
+/model openrouter/google/gemini-2.5-pro  # switch via OpenRouter
 /model                              # show current model
 ```
 

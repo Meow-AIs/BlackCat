@@ -641,6 +641,7 @@ Other AI agents are **general-purpose coding assistants**. They can write code, 
 | [Skills & Marketplace](docs/skills.md) | Install/publish skills, package format, security scanning |
 | [Channels](docs/channels.md) | Telegram, Discord, Slack, WhatsApp, Signal, Email setup |
 | [Slash Commands](docs/commands.md) | All 30+ commands reference |
+| [Scheduler](docs/scheduler.md) | Cron tasks, output routing, DevSecOps automation |
 | [Contributing](CONTRIBUTING.md) | Fork workflow, TDD, code style, PR process |
 
 ---

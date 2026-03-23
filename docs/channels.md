@@ -194,17 +194,36 @@ channels:
 
 ## Setting Up WhatsApp
 
-WhatsApp integration uses the Baileys library (Node.js) as a bridge.
+WhatsApp integration uses the [Baileys](https://github.com/WhiskeySockets/Baileys) library as a JavaScript bridge. BlackCat communicates with WhatsApp through a managed Node.js child process that runs the Baileys client. **WhatsApp is the only channel that requires Node.js** — all other channels (Telegram, Discord, Slack, Signal, Email) are pure Go with no external runtime dependencies.
 
-### 1. Install Baileys Bridge
+### 1. Install Node.js (if not already installed)
+
+Node.js is required as a runtime dependency for the WhatsApp bridge only:
 
 ```bash
-npm install -g @whiskeysockets/baileys
+# macOS
+brew install node
+
+# Ubuntu/Debian
+curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
+sudo apt-get install -y nodejs
+
+# Windows
+# Download from https://nodejs.org/
 ```
 
-### 2. Create Session
+Minimum version: Node.js 18+. Verify with `node --version`.
 
-The first time you connect, Baileys will generate a QR code. Scan it with WhatsApp on your phone to authenticate.
+### 2. First-Time Setup (Auto-Download + QR Pairing)
+
+BlackCat automatically downloads and configures the Baileys bridge on first use. No manual `npm install` is needed:
+
+1. Enable WhatsApp in your config (see step 3 below)
+2. Run `blackcat serve`
+3. BlackCat detects the WhatsApp channel is enabled and downloads the Baileys bridge to `~/.blackcat/whatsapp-bridge/`
+4. A QR code is displayed in the terminal (or sent to another configured channel)
+5. Open WhatsApp on your phone, go to **Linked Devices**, and scan the QR code
+6. Once paired, the session is saved and reconnects automatically on future restarts
 
 ### 3. Configure
 
@@ -218,12 +237,26 @@ channels:
       - "+0987654321"
 ```
 
+### 4. Start
+
+```bash
+blackcat serve
+```
+
 ### WhatsApp Features
 
-- End-to-end encrypted messaging (via WhatsApp)
-- Phone number-based access control
-- Session persistence across restarts
+- End-to-end encrypted messaging (via WhatsApp protocol)
+- Phone number-based access control (E.164 format)
+- Session persistence across restarts (no re-scanning needed)
 - Per-user session isolation
+- Auto-download of Baileys bridge on first use
+- Graceful reconnection on network interruption
+
+### WhatsApp Troubleshooting
+
+- **QR code not appearing**: Ensure Node.js is installed and in your PATH. Check `blackcat serve` logs for bridge download errors.
+- **Session expired**: WhatsApp may unlink devices after 14 days of inactivity. Re-scan the QR code.
+- **Node.js version error**: Ensure Node.js 18+ is installed. Run `node --version` to verify.
 
 ## Setting Up Signal
 
@@ -291,6 +324,41 @@ Email is configured via the adapter directly (not yet in `config.yaml`). The ada
 - SMTP for sending responses
 - Sender-based access control
 - Per-user session isolation
+
+## Slash Commands on Channels
+
+Slash commands work on **all channels** — TUI, Telegram, Discord, Slack, WhatsApp, Signal, and Email. When a message starts with `/`, it is intercepted by the `InputMiddleware` (in `internal/commands/middleware.go`) **before** it reaches the LLM. This means:
+
+- **No tokens are consumed** — slash commands never make an LLM API call
+- **Instant responses** — results return immediately without waiting for model inference
+- **Consistent behavior** — the same commands work identically across every channel
+
+### How It Works
+
+```
+User sends "/status" on Telegram
+  -> Telegram adapter receives message
+  -> Gateway routes to InputMiddleware
+  -> Middleware detects "/" prefix
+  -> Command handler executes directly
+  -> Result sent back through Telegram adapter
+  -> LLM is never called
+```
+
+### Examples
+
+| Channel | User Message | Result |
+|---------|-------------|--------|
+| Telegram | `/status` | Instant system status (model, domain, memory, plugins) |
+| Discord | `/memory search auth` | Instant hybrid memory search for "auth" |
+| Slack | `/cost` | Instant session cost and token usage |
+| WhatsApp | `/model ollama/qwen2.5:32b` | Instant model switch confirmation |
+| TUI | `/schedule list` | Instant list of all scheduled tasks |
+| Email | `/help` | Instant command reference |
+
+This saves significant tokens on routine operations. Instead of asking the LLM "how much have I spent this session?", just type `/cost` and get an instant answer.
+
+See [Slash Commands Reference](./commands.md) for the complete list of 30+ available commands.
 
 ## Gateway Configuration
 

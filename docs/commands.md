@@ -2,6 +2,8 @@
 
 > All built-in slash commands for BlackCat. For configuration, see [Configuration](./configuration.md). For skills and plugins, see [Skills](./skills.md) and [Plugins](./plugins.md).
 
+> **Cross-channel support**: All slash commands work on every channel — TUI, Telegram, Discord, Slack, WhatsApp, Signal, and Email. Commands are intercepted by `InputMiddleware` before reaching the LLM, so they consume zero tokens and return instant results. See [Channels: Slash Commands on Channels](./channels.md#slash-commands-on-channels) for details.
+
 ## Overview
 
 BlackCat provides 30+ built-in slash commands organized by category. Type `/help` to see all available commands, or `/help <command>` for detailed usage.
@@ -28,7 +30,7 @@ Commands are registered in `internal/commands/builtin.go` and processed through 
 ```
 /help                           # list all commands
 /help memory                    # help for memory commands
-/model anthropic/claude-opus-4-5  # switch to Opus
+/model anthropic/claude-opus-4-6  # switch to Opus
 /model                          # show current model
 /cost                           # show session spending
 /status                         # show system overview
