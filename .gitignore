@@ -1,0 +1,46 @@
+# Binaries
+blackcat
+blackcat.exe
+blackcat-*
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Test
+*.test
+cover.out
+cover_new.out
+coverage.out
+*.prof
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build
+dist/
+
+# Local data
+*.db
+*.db-shm
+*.db-wal
+secrets.enc
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Internal planning docs (not for public)
+CLAUDE.md
+PLANNING.md
+IMPROVEMENT-PLAN.md
+PRD.md

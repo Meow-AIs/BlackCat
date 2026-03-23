@@ -1,0 +1,81 @@
+# BlackCat Configuration
+# See: https://github.com/Meow-AIs/BlackCat
+
+# Default LLM provider
+provider: openai
+
+# Provider configurations
+providers:
+  openai:
+    model: gpt-4o
+    # api_key: (set via OPENAI_API_KEY env var)
+    # base_url: https://api.openai.com/v1
+  anthropic:
+    model: claude-sonnet-4-20250514
+    # api_key: (set via ANTHROPIC_API_KEY env var)
+  ollama:
+    model: llama3.2
+    base_url: http://localhost:11434
+
+# Model router: auto-select model by task type
+router:
+  default: openai
+  planning: openai
+  coding: anthropic
+  subagent: ollama
+
+# Memory settings
+memory:
+  max_vectors: 10000
+  embedding_model: minilm-l6-v2
+  similarity_threshold: 0.7
+  auto_consolidate: true
+  consolidate_after: 100
+
+# Security settings
+security:
+  permission_mode: ask    # allow, auto_approve, ask, deny
+  allowed_commands: []
+  denied_commands:
+    - "rm -rf /*"
+    - "format"
+    - "shutdown"
+    - "reboot"
+  secret_detection: true
+  sandbox: true
+
+# Channel messaging (for 'blackcat serve')
+channels: {}
+  # telegram:
+  #   token: (set via TELEGRAM_BOT_TOKEN env var)
+  #   allowed_users: []
+  # discord:
+  #   token: (set via DISCORD_BOT_TOKEN env var)
+  #   allowed_guilds: []
+  # slack:
+  #   token: (set via SLACK_BOT_TOKEN env var)
+  #   allowed_channels: []
+  # whatsapp:
+  #   session_dir: ~/.blackcat/whatsapp
+
+# Scheduler
+scheduler:
+  enabled: false
+  max_concurrent: 3
+  schedules: []
+
+# MCP servers
+mcp_servers: []
+  # - name: filesystem
+  #   command: npx
+  #   args: ["-y", "@anthropic/mcp-server-filesystem", "/home/user"]
+
+# Logging
+log:
+  level: info    # debug, info, warn, error
+  file: ""       # empty = stderr only
+
+# TUI settings
+tui:
+  theme: auto    # auto, dark, light
+  editor: $EDITOR
