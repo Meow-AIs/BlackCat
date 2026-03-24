@@ -1,0 +1,121 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build & Release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+
+      - name: Install cross-compilation dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc gcc-aarch64-linux-gnu gcc-mingw-w64-x86-64
+
+      - name: Set version from tag
+        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+
+      - name: Build Linux amd64
+        env:
+          GOOS: linux
+          GOARCH: amd64
+          CGO_ENABLED: 1
+          CC: gcc
+        run: |
+          go build -ldflags="-s -w -X main.version=$VERSION -X main.commit=$(git rev-parse --short HEAD)" \
+            -o dist/blackcat-linux-amd64 ./cmd/blackcat/
+
+      - name: Build Linux arm64
+        env:
+          GOOS: linux
+          GOARCH: arm64
+          CGO_ENABLED: 1
+          CC: aarch64-linux-gnu-gcc
+        run: |
+          go build -ldflags="-s -w -X main.version=$VERSION -X main.commit=$(git rev-parse --short HEAD)" \
+            -o dist/blackcat-linux-arm64 ./cmd/blackcat/
+
+      - name: Build Windows amd64
+        env:
+          GOOS: windows
+          GOARCH: amd64
+          CGO_ENABLED: 1
+          CC: x86_64-w64-mingw32-gcc
+        run: |
+          go build -ldflags="-s -w -X main.version=$VERSION -X main.commit=$(git rev-parse --short HEAD)" \
+            -o dist/blackcat-windows-amd64.exe ./cmd/blackcat/
+
+      - name: Build macOS amd64 (no CGo)
+        env:
+          GOOS: darwin
+          GOARCH: amd64
+          CGO_ENABLED: 0
+        run: |
+          go build -ldflags="-s -w -X main.version=$VERSION -X main.commit=$(git rev-parse --short HEAD)" \
+            -o dist/blackcat-darwin-amd64 ./cmd/blackcat/ || echo "macOS amd64 skipped (CGo cross-compile needs osxcross)"
+
+      - name: Build macOS arm64 (no CGo)
+        env:
+          GOOS: darwin
+          GOARCH: arm64
+          CGO_ENABLED: 0
+        run: |
+          go build -ldflags="-s -w -X main.version=$VERSION -X main.commit=$(git rev-parse --short HEAD)" \
+            -o dist/blackcat-darwin-arm64 ./cmd/blackcat/ || echo "macOS arm64 skipped (CGo cross-compile needs osxcross)"
+
+      - name: Create archives
+        run: |
+          cd dist
+          for f in blackcat-linux-* blackcat-darwin-*; do
+            [ -f "$f" ] && tar czf "${f}.tar.gz" "$f" && rm "$f"
+          done
+          for f in blackcat-windows-*.exe; do
+            [ -f "$f" ] && zip "${f%.exe}.zip" "$f" && rm "$f"
+          done
+
+      - name: Generate checksums
+        run: |
+          cd dist
+          sha256sum * > checksums.txt
+
+      - name: List artifacts
+        run: ls -lh dist/
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
+          generate_release_notes: false
+          body: |
+            ## BlackCat ${{ env.VERSION }}
+
+            > Your DevSecOps engineer and Solution Architect — in a 15MB binary.
+
+            ### Install
+
+            **Linux/macOS:**
+            ```bash
+            curl -fsSL https://raw.githubusercontent.com/Meow-AIs/BlackCat/main/scripts/install.sh | bash
+            ```
+
+            **Or download binary below** and place in your PATH.
+
+            ### Checksums
+            See `checksums.txt` for SHA-256 verification.
+
+            ### Full changelog
+            See [README](https://github.com/Meow-AIs/BlackCat#readme) and [docs/](https://github.com/Meow-AIs/BlackCat/tree/main/docs).
