@@ -21,9 +21,10 @@ type Definition struct {
 
 // Result is the output of executing a tool.
 type Result struct {
-	Output   string `json:"output"`
-	Error    string `json:"error,omitempty"`
-	ExitCode int    `json:"exit_code"`
+	Output   string         `json:"output"`
+	Error    string         `json:"error,omitempty"`
+	ExitCode int            `json:"exit_code"`
+	Metadata map[string]any `json:"metadata,omitempty"`
 }
 
 // Tool is the interface all executable tools must implement.

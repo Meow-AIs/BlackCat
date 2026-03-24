@@ -6,14 +6,27 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"os/signal"
 	"path/filepath"
 	"runtime"
 	"strings"
+	"syscall"
 	"time"
 
 	bcembed "github.com/meowai/blackcat/embed"
+	"github.com/meowai/blackcat/internal/agent"
+	"github.com/meowai/blackcat/internal/channels"
+	"github.com/meowai/blackcat/internal/channels/discord"
+	"github.com/meowai/blackcat/internal/channels/slack"
+	"github.com/meowai/blackcat/internal/channels/telegram"
+	"github.com/meowai/blackcat/internal/channels/whatsapp"
+	"github.com/meowai/blackcat/internal/config"
 	"github.com/meowai/blackcat/internal/llm"
+	"github.com/meowai/blackcat/internal/security"
+	"github.com/meowai/blackcat/internal/tools"
+	"github.com/meowai/blackcat/internal/tools/builtin"
 	"github.com/meowai/blackcat/internal/updater"
+	"gopkg.in/yaml.v3"
 )
 
 var (
@@ -74,7 +87,162 @@ func runInteractive() {
 
 func runOneShot(prompt string) {
 	fmt.Printf("Processing: %s\n", prompt)
-	fmt.Println("(agent not yet implemented)")
+
+	core, err := initAgent()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error: failed to initialise agent: %v\n", err)
+		return
+	}
+
+	ctx := context.Background()
+	sess, err := core.StartSession(ctx, "cli", "user")
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error: failed to start session: %v\n", err)
+		return
+	}
+
+	resp, err := core.Process(ctx, sess.ID, prompt)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+		return
+	}
+
+	fmt.Println(resp.Text)
+
+	// Print cost summary when tokens were consumed.
+	if summary := agentCostSummary(core); summary != "" {
+		fmt.Fprintln(os.Stderr, summary)
+	}
+}
+
+// agentCostSummary extracts cost info from a Core via its CostTracker.
+// Returns an empty string when no tokens were recorded.
+func agentCostSummary(_ *agent.Core) string {
+	// CostTracker is unexported on Core; we surfaced it at construction
+	// through the module-level costTracker variable below.
+	if lastCostTracker == nil {
+		return ""
+	}
+	s := lastCostTracker.Summary()
+	if s.TotalPrompt+s.TotalCompletion == 0 {
+		return ""
+	}
+	return fmt.Sprintf("tokens: %d in / %d out  cost: $%.6f",
+		s.TotalPrompt, s.TotalCompletion, s.TotalCost)
+}
+
+// lastCostTracker holds the CostTracker used by the most recent initAgent call.
+// This is a package-level variable so agentCostSummary can access it without
+// requiring Core to expose the tracker.
+var lastCostTracker *llm.CostTracker
+
+// loadConfig reads ~/.blackcat/config.yaml and falls back to config.Default()
+// if the file is absent or unreadable.
+func loadConfig() config.Config {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return config.Default()
+	}
+	cfg, err := config.LoadFromFile(filepath.Join(home, ".blackcat", "config.yaml"))
+	if err != nil {
+		return config.Default()
+	}
+	return cfg
+}
+
+// configFilePath returns the canonical path of the global config file,
+// creating the parent directory if necessary.
+func configFilePath() (string, error) {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return "", fmt.Errorf("cannot determine home directory: %w", err)
+	}
+	dir := filepath.Join(home, ".blackcat")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return "", fmt.Errorf("cannot create config directory: %w", err)
+	}
+	return filepath.Join(dir, "config.yaml"), nil
+}
+
+// saveConfig serialises cfg as YAML and writes it atomically to path.
+// The caller is responsible for creating a backup before calling this.
+func saveConfig(cfg config.Config, path string) error {
+	data, err := marshalConfig(cfg)
+	if err != nil {
+		return fmt.Errorf("marshal config: %w", err)
+	}
+	return os.WriteFile(path, data, 0o644)
+}
+
+// marshalConfig converts a Config to YAML bytes using gopkg.in/yaml.v3.
+func marshalConfig(cfg config.Config) ([]byte, error) {
+	return yaml.Marshal(cfg)
+}
+
+// selectProvider picks an LLM provider based on environment variables using the
+// priority ANTHROPIC_API_KEY → OPENAI_API_KEY → GROQ_API_KEY → Ollama (always).
+func selectProvider(cfg config.Config) llm.Provider {
+	if key := os.Getenv("ANTHROPIC_API_KEY"); key != "" {
+		return llm.NewAnthropicProvider(key, "")
+	}
+	if key := os.Getenv("OPENAI_API_KEY"); key != "" {
+		return llm.NewOpenAIProvider(key, "", "openai")
+	}
+	if key := os.Getenv("GROQ_API_KEY"); key != "" {
+		return llm.NewOpenAIProvider(key, "https://api.groq.com/openai/v1", "groq")
+	}
+	// Ollama is always available as a local fallback.
+	baseURL := cfg.Providers.Ollama.BaseURL
+	return llm.NewOllamaProvider(baseURL)
+}
+
+// buildRegistry creates a tool registry with all builtin tools registered.
+func buildRegistry(checker *security.PermissionChecker) tools.Registry {
+	reg := tools.NewMapRegistry()
+
+	// Filesystem tools
+	_ = reg.Register(builtin.NewReadFileTool())
+	_ = reg.Register(builtin.NewWriteFileTool())
+	_ = reg.Register(builtin.NewListDirTool())
+	_ = reg.Register(builtin.NewSearchFilesTool())
+	_ = reg.Register(builtin.NewSearchContentTool())
+
+	// Shell
+	_ = reg.Register(builtin.NewShellTool(checker))
+
+	// Web
+	_ = reg.Register(builtin.NewWebFetchTool())
+	_ = reg.Register(builtin.NewWebSearchTool())
+
+	// Multimodal
+	_ = reg.Register(builtin.NewVisionTool())
+	_ = reg.Register(builtin.NewVoiceTool())
+
+	// Skills marketplace
+	_ = reg.Register(builtin.NewSkillsTool())
+
+	return reg
+}
+
+// initAgent constructs a fully wired agent.Core ready to Process prompts.
+func initAgent() (*agent.Core, error) {
+	cfg := loadConfig()
+
+	checker := security.NewPermissionChecker()
+	tracker := llm.NewCostTracker(0, 0)
+	lastCostTracker = tracker
+
+	provider := selectProvider(cfg)
+	registry := buildRegistry(checker)
+
+	core := agent.NewCore(agent.CoreConfig{
+		Provider:    provider,
+		Registry:    registry,
+		MemEngine:   nil, // memory engine wired in a later phase
+		Checker:     checker,
+		CostTracker: tracker,
+	})
+	return core, nil
 }
 
 func cmdLogin(args []string) int {
@@ -434,11 +602,114 @@ func cmdConfig(args []string) int {
 	return 0
 }
 
-func cmdServe() {
+// cmdServeDry prints the serve banner without starting adapters or blocking.
+// Used in tests to exercise the startup path without blocking on signals.
+func cmdServeDry() {
 	fmt.Println("Starting BlackCat gateway daemon...")
 	fmt.Println("Channels: Telegram, Discord, Slack, WhatsApp")
 	fmt.Println("Scheduler: active")
-	fmt.Println("(gateway not yet implemented)")
+}
+
+func cmdServe() {
+	cmdServeDry()
+
+	core, err := initAgent()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error: failed to initialise agent: %v\n", err)
+		return
+	}
+
+	cfg := loadConfig()
+
+	// handler routes every incoming channel message through the agent.
+	handler := func(ctx context.Context, msg channels.IncomingMessage) (string, error) {
+		sess, err := core.StartSession(ctx, string(msg.Platform), msg.UserID)
+		if err != nil {
+			return "", fmt.Errorf("start session: %w", err)
+		}
+		resp, err := core.Process(ctx, sess.ID, msg.Text)
+		if err != nil {
+			return "", err
+		}
+		return resp.Text, nil
+	}
+
+	gw := channels.NewGateway(handler)
+
+	// Register adapters for enabled channels.
+	if cfg.Channels.Telegram.Enabled || os.Getenv("TELEGRAM_BOT_TOKEN") != "" {
+		token := cfg.Channels.Telegram.Token
+		if token == "" {
+			token = os.Getenv("TELEGRAM_BOT_TOKEN")
+		}
+		gw.Register(telegram.New(telegram.Config{
+			Token:        token,
+			AllowedUsers: cfg.Channels.Telegram.AllowedUsers,
+		}))
+		fmt.Println("  Telegram: registered")
+	}
+
+	if cfg.Channels.Discord.Enabled || os.Getenv("DISCORD_BOT_TOKEN") != "" {
+		token := cfg.Channels.Discord.Token
+		if token == "" {
+			token = os.Getenv("DISCORD_BOT_TOKEN")
+		}
+		gw.Register(discord.New(discord.Config{
+			Token:           token,
+			AllowedGuilds:   cfg.Channels.Discord.AllowedGuilds,
+			AllowedChannels: cfg.Channels.Discord.AllowedChannels,
+		}))
+		fmt.Println("  Discord: registered")
+	}
+
+	if cfg.Channels.Slack.Enabled || os.Getenv("SLACK_APP_TOKEN") != "" {
+		appToken := cfg.Channels.Slack.AppToken
+		if appToken == "" {
+			appToken = os.Getenv("SLACK_APP_TOKEN")
+		}
+		botToken := cfg.Channels.Slack.BotToken
+		if botToken == "" {
+			botToken = os.Getenv("SLACK_BOT_TOKEN")
+		}
+		gw.Register(slack.New(slack.Config{
+			AppToken:        appToken,
+			BotToken:        botToken,
+			AllowedChannels: cfg.Channels.Slack.AllowedChannels,
+		}))
+		fmt.Println("  Slack: registered")
+	}
+
+	if cfg.Channels.WhatsApp.Enabled {
+		sessionPath := cfg.Channels.WhatsApp.SessionPath
+		if sessionPath == "" {
+			home, _ := os.UserHomeDir()
+			sessionPath = filepath.Join(home, ".blackcat", "whatsapp-session")
+		}
+		gw.Register(whatsapp.New(whatsapp.Config{
+			SessionPath:    sessionPath,
+			AllowedNumbers: cfg.Channels.WhatsApp.AllowedNumbers,
+		}))
+		fmt.Println("  WhatsApp: registered")
+	}
+
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
+
+	if err := gw.Start(ctx); err != nil {
+		fmt.Fprintf(os.Stderr, "error: gateway start failed: %v\n", err)
+		return
+	}
+
+	fmt.Println("Gateway running. Press Ctrl+C to stop.")
+	<-ctx.Done()
+
+	fmt.Println("\nShutting down gateway...")
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if err := gw.Stop(shutdownCtx); err != nil {
+		fmt.Fprintf(os.Stderr, "warning: gateway stop error: %v\n", err)
+	}
+	fmt.Println("Goodbye.")
 }
 
 func cmdMemory(args []string) int {
@@ -479,23 +750,66 @@ func cmdSchedule(args []string) int {
 
 	switch args[0] {
 	case "list":
-		fmt.Println("Schedules: (none configured)")
+		cfg := loadConfig()
+		if len(cfg.Scheduler.Schedules) == 0 {
+			fmt.Println("Schedules: (none configured)")
+			return 0
+		}
+		fmt.Println("Schedules:")
+		for _, s := range cfg.Scheduler.Schedules {
+			fmt.Printf("  %s  %s\n", s.Cron, s.Task)
+		}
 	case "add":
 		if len(args) < 3 {
 			fmt.Println("Usage: blackcat schedule add CRON PROMPT")
 			return 1
 		}
 		cron := args[1]
-		prompt := strings.Join(args[2:], " ")
-		fmt.Printf("Added schedule: %s -> %s\n", cron, prompt)
-		fmt.Println("(schedule persistence not yet implemented)")
+		task := strings.Join(args[2:], " ")
+		cfg := loadConfig()
+		cfg.Scheduler.Schedules = append(cfg.Scheduler.Schedules,
+			config.ScheduleEntry{Cron: cron, Task: task})
+		configPath, err := configFilePath()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "error: %v\n", err)
+			return 1
+		}
+		backupConfigFile(configPath)
+		if err := saveConfig(cfg, configPath); err != nil {
+			fmt.Fprintf(os.Stderr, "error: could not save config: %v\n", err)
+			return 1
+		}
+		fmt.Printf("Added schedule: %s -> %s\n", cron, task)
 	case "remove":
 		if len(args) < 2 {
 			fmt.Println("Usage: blackcat schedule remove ID")
 			return 1
 		}
-		fmt.Printf("Removed schedule: %s\n", args[1])
-		fmt.Println("(schedule persistence not yet implemented)")
+		name := strings.Join(args[1:], " ")
+		cfg := loadConfig()
+		original := len(cfg.Scheduler.Schedules)
+		filtered := make([]config.ScheduleEntry, 0, original)
+		for _, s := range cfg.Scheduler.Schedules {
+			if s.Task != name && s.Name != name {
+				filtered = append(filtered, s)
+			}
+		}
+		if len(filtered) == original {
+			fmt.Fprintf(os.Stderr, "error: schedule %q not found\n", name)
+			return 1
+		}
+		cfg.Scheduler.Schedules = filtered
+		configPath, err := configFilePath()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "error: %v\n", err)
+			return 1
+		}
+		backupConfigFile(configPath)
+		if err := saveConfig(cfg, configPath); err != nil {
+			fmt.Fprintf(os.Stderr, "error: could not save config: %v\n", err)
+			return 1
+		}
+		fmt.Printf("Removed schedule: %s\n", name)
 	default:
 		fmt.Printf("Unknown schedule subcommand: %s\n", args[0])
 		return 1
@@ -534,23 +848,70 @@ func cmdMCP(args []string) int {
 
 	switch args[0] {
 	case "list":
-		fmt.Println("MCP servers: (none configured)")
+		cfg := loadConfig()
+		if len(cfg.MCP.Servers) == 0 {
+			fmt.Println("MCP servers: (none configured)")
+			return 0
+		}
+		fmt.Println("MCP servers:")
+		for _, s := range cfg.MCP.Servers {
+			fmt.Printf("  %s: %s %s\n", s.Name, s.Command, strings.Join(s.Args, " "))
+		}
 	case "add":
 		if len(args) < 3 {
-			fmt.Println("Usage: blackcat mcp add NAME COMMAND")
+			fmt.Println("Usage: blackcat mcp add NAME COMMAND [ARGS...]")
 			return 1
 		}
 		name := args[1]
-		command := strings.Join(args[2:], " ")
+		command := args[2]
+		mcpArgs := args[3:]
+		cfg := loadConfig()
+		server := config.MCPServer{Name: name, Command: command}
+		if len(mcpArgs) > 0 {
+			server.Args = mcpArgs
+		}
+		cfg.MCP.Servers = append(cfg.MCP.Servers, server)
+		configPath, err := configFilePath()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "error: %v\n", err)
+			return 1
+		}
+		backupConfigFile(configPath)
+		if err := saveConfig(cfg, configPath); err != nil {
+			fmt.Fprintf(os.Stderr, "error: could not save config: %v\n", err)
+			return 1
+		}
 		fmt.Printf("Added MCP server: %s -> %s\n", name, command)
-		fmt.Println("(MCP persistence not yet implemented)")
 	case "remove":
 		if len(args) < 2 {
 			fmt.Println("Usage: blackcat mcp remove NAME")
 			return 1
 		}
-		fmt.Printf("Removed MCP server: %s\n", args[1])
-		fmt.Println("(MCP persistence not yet implemented)")
+		name := args[1]
+		cfg := loadConfig()
+		original := len(cfg.MCP.Servers)
+		filtered := make([]config.MCPServer, 0, original)
+		for _, s := range cfg.MCP.Servers {
+			if s.Name != name {
+				filtered = append(filtered, s)
+			}
+		}
+		if len(filtered) == original {
+			fmt.Fprintf(os.Stderr, "error: MCP server %q not found\n", name)
+			return 1
+		}
+		cfg.MCP.Servers = filtered
+		configPath, err := configFilePath()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "error: %v\n", err)
+			return 1
+		}
+		backupConfigFile(configPath)
+		if err := saveConfig(cfg, configPath); err != nil {
+			fmt.Fprintf(os.Stderr, "error: could not save config: %v\n", err)
+			return 1
+		}
+		fmt.Printf("Removed MCP server: %s\n", name)
 	default:
 		fmt.Printf("Unknown mcp subcommand: %s\n", args[0])
 		return 1

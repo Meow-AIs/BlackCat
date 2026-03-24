@@ -37,6 +37,7 @@ type Core struct {
 	memEngine   memory.Engine
 	checker     *security.PermissionChecker
 	costTracker *llm.CostTracker
+	pool        *SubAgentPool
 
 	// Context providers — optional, wire these to enable full knowledge injection
 	skillProvider  SkillProvider
@@ -67,6 +68,7 @@ type CoreConfig struct {
 	DomainProvider DomainProvider
 	NudgeProvider  NudgeProvider
 	TokenBudget    int // 0 = default 4000
+	MaxSubAgents   int // 0 = default 5
 }
 
 // NewCore creates a new agent core.
@@ -75,12 +77,17 @@ func NewCore(cfg CoreConfig) *Core {
 	if budget <= 0 {
 		budget = 4000
 	}
+	maxSubAgents := cfg.MaxSubAgents
+	if maxSubAgents <= 0 {
+		maxSubAgents = 5
+	}
 	return &Core{
 		provider:       cfg.Provider,
 		registry:       cfg.Registry,
 		memEngine:      cfg.MemEngine,
 		checker:        cfg.Checker,
 		costTracker:    cfg.CostTracker,
+		pool:           NewSubAgentPool(maxSubAgents),
 		skillProvider:  cfg.SkillProvider,
 		domainProvider: cfg.DomainProvider,
 		nudgeProvider:  cfg.NudgeProvider,
@@ -274,12 +281,16 @@ func (c *Core) Process(ctx context.Context, sessionID string, input string) (Res
 }
 
 func (c *Core) SpawnSubAgent(_ context.Context, _ string, task SubAgentTask) (string, error) {
-	// Placeholder — full sub-agent implementation in Phase 4
-	return task.ID, nil
+	return c.pool.Spawn(task)
 }
 
 func (c *Core) ListSubAgents(_ context.Context, _ string) ([]SubAgentTask, error) {
-	return nil, nil
+	return c.pool.List(), nil
+}
+
+// KillSubAgent cancels and removes a sub-agent from the pool.
+func (c *Core) KillSubAgent(_ context.Context, _ string, taskID string) error {
+	return c.pool.Kill(taskID)
 }
 
 func (c *Core) buildSystemPrompt(ctx context.Context, ss *sessionState) string {

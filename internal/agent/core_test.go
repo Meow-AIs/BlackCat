@@ -253,3 +253,173 @@ func TestBuildJSONSchema(t *testing.T) {
 		t.Error("expected 'path' property")
 	}
 }
+
+// --- Sub-agent integration tests ---
+
+func TestNewCoreCreatesPool(t *testing.T) {
+	core := NewCore(CoreConfig{})
+	if core.pool == nil {
+		t.Fatal("expected pool to be initialized in NewCore")
+	}
+}
+
+func TestNewCoreDefaultMaxSubAgents(t *testing.T) {
+	core := NewCore(CoreConfig{})
+	if core.pool.maxConcurrent != 5 {
+		t.Errorf("expected default maxConcurrent=5, got %d", core.pool.maxConcurrent)
+	}
+}
+
+func TestNewCoreCustomMaxSubAgents(t *testing.T) {
+	core := NewCore(CoreConfig{MaxSubAgents: 10})
+	if core.pool.maxConcurrent != 10 {
+		t.Errorf("expected maxConcurrent=10, got %d", core.pool.maxConcurrent)
+	}
+}
+
+func TestSpawnSubAgentReturnsID(t *testing.T) {
+	core := NewCore(CoreConfig{})
+
+	task := SubAgentTask{
+		ID:          "sa-test-1",
+		Description: "Test sub-agent task",
+		Status:      "pending",
+	}
+
+	id, err := core.SpawnSubAgent(context.Background(), "session-1", task)
+	if err != nil {
+		t.Fatalf("SpawnSubAgent failed: %v", err)
+	}
+	if id != task.ID {
+		t.Errorf("expected ID %q, got %q", task.ID, id)
+	}
+}
+
+func TestSpawnSubAgentAppearsInList(t *testing.T) {
+	core := NewCore(CoreConfig{})
+
+	task := SubAgentTask{
+		ID:          "sa-list-1",
+		Description: "List test task",
+		Status:      "pending",
+	}
+
+	_, err := core.SpawnSubAgent(context.Background(), "session-1", task)
+	if err != nil {
+		t.Fatalf("SpawnSubAgent failed: %v", err)
+	}
+
+	tasks, err := core.ListSubAgents(context.Background(), "session-1")
+	if err != nil {
+		t.Fatalf("ListSubAgents failed: %v", err)
+	}
+	if len(tasks) != 1 {
+		t.Fatalf("expected 1 task, got %d", len(tasks))
+	}
+	if tasks[0].ID != task.ID {
+		t.Errorf("expected task ID %q, got %q", task.ID, tasks[0].ID)
+	}
+}
+
+func TestListSubAgentsEmptyWhenNoneSpawned(t *testing.T) {
+	core := NewCore(CoreConfig{})
+
+	tasks, err := core.ListSubAgents(context.Background(), "session-1")
+	if err != nil {
+		t.Fatalf("ListSubAgents failed: %v", err)
+	}
+	if len(tasks) != 0 {
+		t.Errorf("expected 0 tasks, got %d", len(tasks))
+	}
+}
+
+func TestSpawnSubAgentMultipleAppearsInList(t *testing.T) {
+	core := NewCore(CoreConfig{MaxSubAgents: 5})
+
+	for i := 0; i < 3; i++ {
+		task := SubAgentTask{
+			ID:          "sa-multi-" + string(rune('1'+i)),
+			Description: "Multi task",
+			Status:      "pending",
+		}
+		_, err := core.SpawnSubAgent(context.Background(), "session-1", task)
+		if err != nil {
+			t.Fatalf("SpawnSubAgent %d failed: %v", i, err)
+		}
+	}
+
+	tasks, err := core.ListSubAgents(context.Background(), "session-1")
+	if err != nil {
+		t.Fatalf("ListSubAgents failed: %v", err)
+	}
+	if len(tasks) != 3 {
+		t.Errorf("expected 3 tasks, got %d", len(tasks))
+	}
+}
+
+func TestSpawnSubAgentPoolCapacityLimit(t *testing.T) {
+	core := NewCore(CoreConfig{MaxSubAgents: 2})
+
+	for i := 0; i < 2; i++ {
+		task := SubAgentTask{
+			ID:          "sa-cap-" + string(rune('1'+i)),
+			Description: "Cap task",
+			Status:      "pending",
+		}
+		_, err := core.SpawnSubAgent(context.Background(), "session-1", task)
+		if err != nil {
+			t.Fatalf("SpawnSubAgent %d failed unexpectedly: %v", i, err)
+		}
+	}
+
+	// Third spawn must fail — pool is at capacity
+	overLimit := SubAgentTask{ID: "sa-cap-over", Description: "Over limit", Status: "pending"}
+	_, err := core.SpawnSubAgent(context.Background(), "session-1", overLimit)
+	if err == nil {
+		t.Error("expected error when spawning beyond pool capacity")
+	}
+}
+
+func TestSpawnSubAgentDuplicateIDFails(t *testing.T) {
+	core := NewCore(CoreConfig{})
+
+	task := SubAgentTask{ID: "sa-dup", Description: "Dup task", Status: "pending"}
+	_, err := core.SpawnSubAgent(context.Background(), "session-1", task)
+	if err != nil {
+		t.Fatalf("first SpawnSubAgent failed: %v", err)
+	}
+
+	_, err = core.SpawnSubAgent(context.Background(), "session-1", task)
+	if err == nil {
+		t.Error("expected error when spawning duplicate task ID")
+	}
+}
+
+func TestKillSubAgentRemovesFromPool(t *testing.T) {
+	core := NewCore(CoreConfig{})
+
+	task := SubAgentTask{ID: "sa-kill-1", Description: "Kill test task", Status: "pending"}
+	_, err := core.SpawnSubAgent(context.Background(), "session-1", task)
+	if err != nil {
+		t.Fatalf("SpawnSubAgent failed: %v", err)
+	}
+
+	err = core.KillSubAgent(context.Background(), "session-1", task.ID)
+	if err != nil {
+		t.Fatalf("KillSubAgent failed: %v", err)
+	}
+
+	tasks, _ := core.ListSubAgents(context.Background(), "session-1")
+	if len(tasks) != 0 {
+		t.Errorf("expected 0 tasks after kill, got %d", len(tasks))
+	}
+}
+
+func TestKillSubAgentNotFoundReturnsError(t *testing.T) {
+	core := NewCore(CoreConfig{})
+
+	err := core.KillSubAgent(context.Background(), "session-1", "nonexistent-id")
+	if err == nil {
+		t.Error("expected error when killing nonexistent sub-agent")
+	}
+}
