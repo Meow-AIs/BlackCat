@@ -12,23 +12,39 @@ type MessageHandler func(ctx context.Context, msg IncomingMessage) (string, erro
 
 // Gateway manages all channel adapters and routes messages.
 type Gateway struct {
-	mu       sync.Mutex
-	adapters map[Platform]Adapter
-	handler  MessageHandler
-	sessions *SessionManager
-	limiter  *RateLimiter
-	pairing  *PairingManager
+	mu        sync.Mutex
+	adapters  map[Platform]Adapter
+	handler   MessageHandler
+	sessions  *SessionManager
+	limiter   *RateLimiter
+	pairing   *PairingManager
+	cmdRouter *CommandRouter
+}
+
+// GatewayOption configures optional Gateway behaviour.
+type GatewayOption func(*Gateway)
+
+// WithCommandRouter attaches a CommandRouter so slash commands are handled
+// directly on the channel without going through the LLM.
+func WithCommandRouter(router *CommandRouter) GatewayOption {
+	return func(g *Gateway) {
+		g.cmdRouter = router
+	}
 }
 
 // NewGateway creates a gateway with the given message handler.
-func NewGateway(handler MessageHandler) *Gateway {
-	return &Gateway{
+func NewGateway(handler MessageHandler, opts ...GatewayOption) *Gateway {
+	gw := &Gateway{
 		adapters: make(map[Platform]Adapter),
 		handler:  handler,
 		sessions: NewSessionManager(),
 		limiter:  NewRateLimiter(30, 60), // 30 msgs per 60 seconds
 		pairing:  NewPairingManager(),
 	}
+	for _, opt := range opts {
+		opt(gw)
+	}
+	return gw
 }
 
 // Register adds a channel adapter to the gateway.
@@ -108,6 +124,14 @@ func (g *Gateway) handleMessage(ctx context.Context, adapter Adapter, msg Incomi
 			Format:    FormatPlain,
 		})
 		return
+	}
+
+	// Slash command interception — respond instantly, skip LLM.
+	if g.cmdRouter != nil {
+		if reply := g.cmdRouter.ProcessMessage(msg); reply != nil {
+			adapter.Send(ctx, *reply)
+			return
+		}
 	}
 
 	// Process via handler

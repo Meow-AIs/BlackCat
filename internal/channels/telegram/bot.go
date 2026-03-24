@@ -13,6 +13,19 @@ import (
 )
 
 // Bot implements the channels.Adapter interface for Telegram.
+//
+// Current implementation: raw HTTP long-polling against the Telegram Bot API.
+// This works for low-traffic bots but lacks features like media handling,
+// inline keyboards, and webhook support.
+//
+// TODO: Replace with github.com/go-telegram/bot for production use.
+// See docs/native-channels-guide.md#telegram-go-telegrambot for the full
+// migration pattern including:
+//   - Managed long-polling via bot.Start (no manual pollLoop)
+//   - Webhook mode via bot.StartWebhook for high-traffic bots
+//   - Media sending (photos, documents, voice) via bot.SendPhoto etc.
+//   - MarkdownV2 formatting with proper character escaping
+//   - ReplyParameters for threaded replies
 type Bot struct {
 	token        string
 	allowedUsers map[int64]bool
@@ -30,13 +43,18 @@ type Config struct {
 }
 
 // New creates a Telegram bot adapter.
+//
+// The returned Bot uses raw HTTP polling against the Telegram Bot API.
+// For production deployments requiring media handling, webhooks, or
+// MarkdownV2 formatting, migrate to go-telegram/bot.
+// See docs/native-channels-guide.md#telegram-go-telegrambot.
 func New(cfg Config) *Bot {
 	baseURL := cfg.BaseURL
 	if baseURL == "" {
 		baseURL = "https://api.telegram.org"
 	}
 
-	allowed := make(map[int64]bool)
+	allowed := make(map[int64]bool, len(cfg.AllowedUsers))
 	for _, uid := range cfg.AllowedUsers {
 		allowed[uid] = true
 	}
@@ -50,14 +68,24 @@ func New(cfg Config) *Bot {
 	}
 }
 
+// Platform returns the platform identifier for this adapter.
 func (b *Bot) Platform() channels.Platform { return channels.PlatformTelegram }
 
+// Start connects to Telegram and begins long-polling for updates.
+//
+// TODO(native): Replace with go-telegram/bot managed polling:
+//
+//	client, _ := bot.New(b.token, bot.WithDefaultHandler(b.onUpdate))
+//	go client.Start(ctx)
+//
+// See docs/native-channels-guide.md#starting-the-long-poll-loop.
 func (b *Bot) Start(ctx context.Context) error {
 	ctx, b.cancel = context.WithCancel(ctx)
 	go b.pollLoop(ctx)
 	return nil
 }
 
+// Stop gracefully disconnects from Telegram and closes the incoming channel.
 func (b *Bot) Stop(_ context.Context) error {
 	if b.cancel != nil {
 		b.cancel()
@@ -66,8 +94,18 @@ func (b *Bot) Stop(_ context.Context) error {
 	return nil
 }
 
+// Receive returns the channel that emits incoming messages from Telegram.
 func (b *Bot) Receive() <-chan channels.IncomingMessage { return b.incoming }
 
+// Send delivers a message to a Telegram chat.
+//
+// TODO(native): Replace with go-telegram/bot's SendMessage which supports:
+//   - MarkdownV2 parse mode with proper escaping
+//   - ReplyParameters for threaded replies
+//   - InlineKeyboardMarkup for interactive buttons
+//   - SendPhoto, SendDocument, SendVoice for media
+//
+// See docs/native-channels-guide.md#sending-messages.
 func (b *Bot) Send(ctx context.Context, msg channels.OutgoingMessage) error {
 	parseMode := "Markdown"
 	if msg.Format == channels.FormatPlain {
@@ -88,6 +126,16 @@ func (b *Bot) Send(ctx context.Context, msg channels.OutgoingMessage) error {
 	return b.apiCall(ctx, "sendMessage", params)
 }
 
+// pollLoop continuously fetches updates from the Telegram Bot API using
+// long-polling. Each update is converted to an IncomingMessage and sent
+// to the incoming channel.
+//
+// TODO(native): This entire method is replaced by go-telegram/bot's internal
+// polling. Register a default handler instead:
+//
+//	bot.WithDefaultHandler(func(ctx context.Context, b *bot.Bot, update *models.Update) {
+//	    // convert update to IncomingMessage
+//	})
 func (b *Bot) pollLoop(ctx context.Context) {
 	offset := 0
 	for {
@@ -128,6 +176,8 @@ func (b *Bot) pollLoop(ctx context.Context) {
 	}
 }
 
+// --- Telegram API types (minimal subset) ---
+
 type tgUpdate struct {
 	UpdateID int        `json:"update_id"`
 	Message  *tgMessage `json:"message,omitempty"`
@@ -152,28 +202,40 @@ type tgChat struct {
 
 func (b *Bot) getUpdates(ctx context.Context, offset int) ([]tgUpdate, error) {
 	url := fmt.Sprintf("%s/bot%s/getUpdates?offset=%d&timeout=30", b.baseURL, b.token, offset)
-	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("create request: %w", err)
+	}
 	resp, err := b.client.Do(req)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
 
-	body, _ := io.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("read response: %w", err)
+	}
 	var result struct {
 		OK     bool       `json:"ok"`
 		Result []tgUpdate `json:"result"`
 	}
 	if err := json.Unmarshal(body, &result); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("parse response: %w", err)
 	}
 	return result.Result, nil
 }
 
 func (b *Bot) apiCall(ctx context.Context, method string, params map[string]any) error {
-	data, _ := json.Marshal(params)
+	data, err := json.Marshal(params)
+	if err != nil {
+		return fmt.Errorf("marshal params: %w", err)
+	}
 	url := fmt.Sprintf("%s/bot%s/%s", b.baseURL, b.token, method)
-	req, _ := http.NewRequestWithContext(ctx, http.MethodPost, url, strings.NewReader(string(data)))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, strings.NewReader(string(data)))
+	if err != nil {
+		return fmt.Errorf("create request: %w", err)
+	}
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := b.client.Do(req)
 	if err != nil {

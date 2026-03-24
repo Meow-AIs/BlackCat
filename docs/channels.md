@@ -325,6 +325,25 @@ Email is configured via the adapter directly (not yet in `config.yaml`). The ada
 - Sender-based access control
 - Per-user session isolation
 
+## Native vs Stub Implementations
+
+BlackCat ships with three implementation tiers for channel adapters:
+
+| Channel | Current Status | Production Library | Migration Guide |
+|---------|---------------|-------------------|-----------------|
+| Telegram | **Working** (raw HTTP long-polling) | `github.com/go-telegram/bot` | [Native Guide: Telegram](./native-channels-guide.md#telegram-go-telegrambot) |
+| Discord | **Stub** (no real gateway connection) | `github.com/bwmarrin/discordgo` | [Native Guide: Discord](./native-channels-guide.md#discord-discordgo) |
+| Slack | **Working** (Socket Mode via raw HTTP) | `github.com/slack-go/slack` | -- |
+| WhatsApp | **Stub** (no real connection) | `go.mau.fi/whatsmeow` | [Native Guide: WhatsApp](./native-channels-guide.md#whatsapp-whatsmeow) |
+| Signal | **Bridge** (signal-cli subprocess) | -- | -- |
+| Email | **Working** (IMAP/SMTP) | -- | -- |
+
+**What "stub" means**: The adapter satisfies the `channels.Adapter` interface and can be registered with the Gateway, but `Start` does not establish a real connection, `Send` is a no-op, and `Receive` never emits messages. Stubs are useful for testing the gateway routing logic without real platform credentials.
+
+**What "working" means**: The adapter performs real API communication using Go's standard library (`net/http`, `encoding/json`). It handles basic text messaging but may lack advanced features (media, embeds, webhooks) that the native libraries provide.
+
+To upgrade a stub or raw-HTTP adapter to a native library, follow the step-by-step patterns in [docs/native-channels-guide.md](./native-channels-guide.md). Each adapter's source file contains `TODO(native)` comments that reference the specific guide sections.
+
 ## Slash Commands on Channels
 
 Slash commands work on **all channels** — TUI, Telegram, Discord, Slack, WhatsApp, Signal, and Email. When a message starts with `/`, it is intercepted by the `InputMiddleware` (in `internal/commands/middleware.go`) **before** it reaches the LLM. This means:

@@ -1,7 +1,6 @@
 package llm
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -60,7 +59,7 @@ var GitHubCopilotOAuth = OAuthConfig{
 	ClientID:      "Iv1.b507a08c87ecfe98",
 	DeviceCodeURL: "https://github.com/login/device/code",
 	TokenURL:      "https://github.com/login/oauth/access_token",
-	Scopes:        []string{"copilot"},
+	Scopes:        []string{"read:user"},
 }
 
 // OpenAICodexOAuth is the predefined OAuth config for OpenAI Codex.
@@ -82,15 +81,6 @@ func NewOAuthClient(config OAuthConfig) *OAuthClient {
 	}
 }
 
-// setOAuthHeaders sets standard headers for OAuth requests to avoid Cloudflare blocks.
-func setOAuthHeaders(req *http.Request) {
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.Header.Set("Accept", "application/json")
-	req.Header.Set("User-Agent", "BlackCat/1.0")
-	req.Header.Set("Accept-Language", "en-US,en;q=0.9")
-	req.Header.Set("Accept-Encoding", "gzip, deflate, br")
-}
-
 // RequestDeviceCode initiates the device flow by requesting a device code.
 func (c *OAuthClient) RequestDeviceCode(ctx context.Context) (*DeviceCodeResponse, error) {
 	if c.config.DeviceCodeURL == "" {
@@ -98,24 +88,22 @@ func (c *OAuthClient) RequestDeviceCode(ctx context.Context) (*DeviceCodeRespons
 			"Use API key instead: blackcat config set openai_api_key sk-...")
 	}
 
-	// Build request body as JSON (GitHub requires JSON, not form-encoded)
-	bodyMap := map[string]string{
-		"client_id": c.config.ClientID,
-		"scope":     strings.Join(c.config.Scopes, " "),
+	// Build form-encoded request body (GitHub OAuth expects form, not JSON)
+	form := url.Values{
+		"client_id": {c.config.ClientID},
+		"scope":     {strings.Join(c.config.Scopes, " ")},
 	}
 	if c.config.Audience != "" {
-		bodyMap["audience"] = c.config.Audience
+		form.Set("audience", c.config.Audience)
 	}
-	bodyJSON, _ := json.Marshal(bodyMap)
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost,
-		c.config.DeviceCodeURL, bytes.NewReader(bodyJSON))
+		c.config.DeviceCodeURL, strings.NewReader(form.Encode()))
 	if err != nil {
 		return nil, fmt.Errorf("create device code request: %w", err)
 	}
-	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("Accept", "application/json")
-	req.Header.Set("User-Agent", "BlackCat/1.0")
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
@@ -201,7 +189,8 @@ func (c *OAuthClient) pollOnce(ctx context.Context, form url.Values) (*OAuthToke
 	if err != nil {
 		return nil, false, fmt.Errorf("create token request: %w", err)
 	}
-	setOAuthHeaders(req)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("Accept", "application/json")
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {

@@ -295,8 +295,8 @@ func TestOAuthConfigs(t *testing.T) {
 	if OpenAICodexOAuth.ClientID == "" {
 		t.Error("expected non-empty Codex client ID")
 	}
-	if OpenAICodexOAuth.DeviceCodeURL == "" {
-		t.Error("expected non-empty Codex device code URL")
+	if OpenAICodexOAuth.DeviceCodeURL != "" {
+		t.Error("expected empty Codex device code URL (OpenAI has no device code flow)")
 	}
 	if OpenAICodexOAuth.TokenURL == "" {
 		t.Error("expected non-empty Codex token URL")
