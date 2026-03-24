@@ -167,9 +167,9 @@ func (t *InteractiveShellTool) handleList() (tools.Result, error) {
 
 	var sb strings.Builder
 	sb.WriteString(fmt.Sprintf("Sessions (%d):\n", len(sessions)))
-	for _, s := range sessions {
+	for i := range sessions {
 		sb.WriteString(fmt.Sprintf("  %s: %s [%s] (started: %s)\n",
-			s.ID, s.Command, s.State, s.Started.Format(time.RFC3339)))
+			sessions[i].ID, sessions[i].Command, sessions[i].State, sessions[i].Started.Format(time.RFC3339)))
 	}
 
 	return tools.Result{Output: sb.String()}, nil
