@@ -86,7 +86,7 @@ main() {
         ext="zip"
     fi
 
-    local filename="${BINARY}_${version}_${os}_${arch}.${ext}"
+    local filename="${BINARY}-${os}-${arch}.${ext}"
     local url="https://github.com/${REPO}/releases/download/v${version}/${filename}"
 
     echo "Downloading $url..."
@@ -103,16 +103,27 @@ main() {
         unzip -q "$tmpdir/$filename" -d "$tmpdir"
     fi
 
-    local binary_name="$BINARY"
+    local src_name="${BINARY}-${os}-${arch}"
+    local dest_name="$BINARY"
     if [ "$os" = "windows" ]; then
-        binary_name="${BINARY}.exe"
+        src_name="${BINARY}-${os}-${arch}.exe"
+        dest_name="${BINARY}.exe"
     fi
 
-    cp "$tmpdir/$binary_name" "$install_dir/$binary_name"
-    chmod +x "$install_dir/$binary_name"
+    # Handle both flat archive and nested archive layouts
+    if [ -f "$tmpdir/$src_name" ]; then
+        cp "$tmpdir/$src_name" "$install_dir/$dest_name"
+    elif [ -f "$tmpdir/$BINARY" ]; then
+        cp "$tmpdir/$BINARY" "$install_dir/$dest_name"
+    else
+        echo "Error: could not find binary in archive"
+        ls -la "$tmpdir/"
+        exit 1
+    fi
+    chmod +x "$install_dir/$dest_name"
 
     echo ""
-    echo "BlackCat v${version} installed to ${install_dir}/${binary_name}"
+    echo "BlackCat v${version} installed to ${install_dir}/${dest_name}"
 
     # Check if install dir is in PATH
     if ! echo "$PATH" | tr ':' '\n' | grep -qx "$install_dir"; then
