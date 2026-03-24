@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+
+	bcembed "github.com/meowai/blackcat/embed"
 )
 
 var (
@@ -63,7 +65,12 @@ func runOneShot(prompt string) {
 }
 
 func cmdVersion() {
-	fmt.Printf("BlackCat v%s (commit: %s, built: now)\n", version, commit)
+	embeddingStatus := "not bundled (using Ollama/API)"
+	if bcembed.HasEmbeddedModel() {
+		embeddingStatus = "bundled (MiniLM-L6-v2 int8)"
+	}
+	fmt.Printf("BlackCat v%s (commit: %s)\n", version, commit)
+	fmt.Printf("  Embedding: %s\n", embeddingStatus)
 }
 
 func cmdInit() int {
@@ -288,6 +295,13 @@ func cmdDoctor() int {
 		fmt.Println("  Config:        MISSING (run 'blackcat init')")
 	} else {
 		fmt.Println("  Config:        OK")
+	}
+
+	// Embedding model
+	if bcembed.HasEmbeddedModel() {
+		fmt.Println("  Embedding:     BUNDLED (MiniLM-L6-v2 int8)")
+	} else {
+		fmt.Println("  Embedding:     NOT BUNDLED (use Ollama or API)")
 	}
 
 	// OS info
