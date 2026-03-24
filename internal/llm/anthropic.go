@@ -1,12 +1,14 @@
 package llm
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 )
 
 // AnthropicProvider implements Provider for the Anthropic Messages API.
@@ -118,8 +120,160 @@ func (p *AnthropicProvider) Chat(ctx context.Context, req ChatRequest) (ChatResp
 	return p.parseResponse(aResp), nil
 }
 
+// anthropicStreamRequest extends anthropicRequest with the stream flag.
+type anthropicStreamRequest struct {
+	anthropicRequest
+	Stream bool `json:"stream"`
+}
+
+// anthropicSSEEvent represents a parsed SSE event from the Anthropic stream.
+type anthropicSSEEvent struct {
+	Type  string          `json:"type"`
+	Delta json.RawMessage `json:"delta,omitempty"`
+	Usage *struct {
+		OutputTokens int `json:"output_tokens"`
+	} `json:"usage,omitempty"`
+	Message *anthropicResponse `json:"message,omitempty"`
+}
+
 func (p *AnthropicProvider) Stream(ctx context.Context, req ChatRequest) (<-chan StreamChunk, error) {
-	return nil, fmt.Errorf("streaming not yet implemented")
+	body := anthropicStreamRequest{
+		anthropicRequest: p.buildRequest(req),
+		Stream:           true,
+	}
+
+	jsonBody, err := json.Marshal(body)
+	if err != nil {
+		return nil, fmt.Errorf("marshal request: %w", err)
+	}
+
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, p.baseURL+"/v1/messages", bytes.NewReader(jsonBody))
+	if err != nil {
+		return nil, fmt.Errorf("create request: %w", err)
+	}
+
+	httpReq.Header.Set("Content-Type", "application/json")
+	httpReq.Header.Set("x-api-key", p.apiKey)
+	httpReq.Header.Set("anthropic-version", "2023-06-01")
+
+	httpResp, err := p.client.Do(httpReq)
+	if err != nil {
+		return nil, fmt.Errorf("send request: %w", err)
+	}
+
+	if httpResp.StatusCode != http.StatusOK {
+		defer httpResp.Body.Close()
+		respBody, _ := io.ReadAll(httpResp.Body)
+		return nil, fmt.Errorf("API error (status %d): %s", httpResp.StatusCode, string(respBody))
+	}
+
+	ch := make(chan StreamChunk)
+	go func() {
+		defer close(ch)
+		defer httpResp.Body.Close()
+		streamAnthropicSSE(ctx, httpResp.Body, ch)
+	}()
+
+	return ch, nil
+}
+
+// streamAnthropicSSE reads SSE events from an Anthropic Messages stream and sends chunks.
+func streamAnthropicSSE(ctx context.Context, body io.Reader, ch chan<- StreamChunk) {
+	scanner := bufio.NewScanner(body)
+	var currentEvent string
+
+	for scanner.Scan() {
+		line := scanner.Text()
+
+		// Track event type from "event: <type>" lines.
+		if strings.HasPrefix(line, "event: ") {
+			currentEvent = strings.TrimPrefix(line, "event: ")
+			continue
+		}
+
+		// Only process "data: " lines.
+		if !strings.HasPrefix(line, "data: ") {
+			continue
+		}
+		data := strings.TrimPrefix(line, "data: ")
+
+		switch currentEvent {
+		case "content_block_delta":
+			var event struct {
+				Type  string `json:"type"`
+				Index int    `json:"index"`
+				Delta struct {
+					Type string `json:"type"`
+					Text string `json:"text"`
+				} `json:"delta"`
+			}
+			if err := json.Unmarshal([]byte(data), &event); err != nil {
+				continue
+			}
+			chunk := StreamChunk{Content: event.Delta.Text}
+			select {
+			case ch <- chunk:
+			case <-ctx.Done():
+				return
+			}
+
+		case "message_delta":
+			var event struct {
+				Type  string `json:"type"`
+				Delta struct {
+					StopReason string `json:"stop_reason"`
+				} `json:"delta"`
+				Usage struct {
+					OutputTokens int `json:"output_tokens"`
+				} `json:"usage"`
+			}
+			if err := json.Unmarshal([]byte(data), &event); err != nil {
+				continue
+			}
+			chunk := StreamChunk{
+				Done:         true,
+				FinishReason: event.Delta.StopReason,
+			}
+			if event.Usage.OutputTokens > 0 {
+				chunk.Usage = &Usage{
+					CompletionTokens: event.Usage.OutputTokens,
+				}
+			}
+			select {
+			case ch <- chunk:
+			case <-ctx.Done():
+				return
+			}
+
+		case "message_start":
+			var event struct {
+				Type    string `json:"type"`
+				Message struct {
+					Usage struct {
+						InputTokens int `json:"input_tokens"`
+					} `json:"usage"`
+				} `json:"message"`
+			}
+			if err := json.Unmarshal([]byte(data), &event); err != nil {
+				continue
+			}
+			if event.Message.Usage.InputTokens > 0 {
+				chunk := StreamChunk{
+					Usage: &Usage{
+						PromptTokens: event.Message.Usage.InputTokens,
+					},
+				}
+				select {
+				case ch <- chunk:
+				case <-ctx.Done():
+					return
+				}
+			}
+
+		case "message_stop":
+			return
+		}
+	}
 }
 
 func (p *AnthropicProvider) buildRequest(req ChatRequest) anthropicRequest {

@@ -3,9 +3,11 @@ package llm
 import (
 	"context"
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 )
 
 // openaiChatResponse is the mock response structure matching OpenAI API.
@@ -228,5 +230,96 @@ func TestOpenAIProviderModels(t *testing.T) {
 	models := provider.Models()
 	if len(models) == 0 {
 		t.Error("expected at least one model")
+	}
+}
+
+func TestOpenAIProviderStream(t *testing.T) {
+	sseLines := []string{
+		`data: {"id":"chatcmpl-1","choices":[{"delta":{"content":"Hello"},"index":0}]}`,
+		`data: {"id":"chatcmpl-1","choices":[{"delta":{"content":" OpenAI"},"index":0}]}`,
+		`data: {"id":"chatcmpl-1","choices":[{"delta":{},"index":0,"finish_reason":"stop"}],"usage":{"prompt_tokens":10,"completion_tokens":3,"total_tokens":13}}`,
+		`data: [DONE]`,
+	}
+
+	server := newMockOpenAIServer(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/v1/chat/completions" {
+			t.Errorf("expected /v1/chat/completions, got %s", r.URL.Path)
+		}
+		if r.Header.Get("Authorization") != "Bearer test-key" {
+			t.Errorf("expected Bearer test-key, got %s", r.Header.Get("Authorization"))
+		}
+
+		body, _ := io.ReadAll(r.Body)
+		var reqBody map[string]any
+		json.Unmarshal(body, &reqBody)
+		if stream, ok := reqBody["stream"].(bool); !ok || !stream {
+			t.Error("expected stream=true in request body")
+		}
+
+		w.Header().Set("Content-Type", "text/event-stream")
+		flusher, _ := w.(http.Flusher)
+		for _, line := range sseLines {
+			w.Write([]byte(line + "\n\n"))
+			flusher.Flush()
+		}
+	})
+	defer server.Close()
+
+	provider := NewOpenAIProvider("test-key", server.URL+"/v1", "")
+	ch, err := provider.Stream(context.Background(), ChatRequest{
+		Model:    "gpt-4.1",
+		Messages: []Message{{Role: RoleUser, Content: "Hello"}},
+	})
+	if err != nil {
+		t.Fatalf("Stream failed: %v", err)
+	}
+
+	var collected []StreamChunk
+	timeout := time.After(5 * time.Second)
+	for {
+		select {
+		case chunk, ok := <-ch:
+			if !ok {
+				goto done
+			}
+			collected = append(collected, chunk)
+		case <-timeout:
+			t.Fatal("timeout waiting for stream chunks")
+		}
+	}
+done:
+
+	if len(collected) < 2 {
+		t.Fatalf("expected at least 2 chunks, got %d", len(collected))
+	}
+	if collected[0].Content != "Hello" {
+		t.Errorf("expected first chunk 'Hello', got %q", collected[0].Content)
+	}
+	if collected[1].Content != " OpenAI" {
+		t.Errorf("expected second chunk ' OpenAI', got %q", collected[1].Content)
+	}
+	last := collected[len(collected)-1]
+	if !last.Done {
+		t.Error("expected last chunk to be done")
+	}
+	if last.FinishReason != "stop" {
+		t.Errorf("expected finish_reason 'stop', got %q", last.FinishReason)
+	}
+}
+
+func TestOpenAIProviderStreamError(t *testing.T) {
+	server := newMockOpenAIServer(t, func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(`{"error": {"message": "server error"}}`))
+	})
+	defer server.Close()
+
+	provider := NewOpenAIProvider("test-key", server.URL+"/v1", "")
+	_, err := provider.Stream(context.Background(), ChatRequest{
+		Model:    "gpt-4.1",
+		Messages: []Message{{Role: RoleUser, Content: "Hello"}},
+	})
+	if err == nil {
+		t.Fatal("expected error for 500 response")
 	}
 }
