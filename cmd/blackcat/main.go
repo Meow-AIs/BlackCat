@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
@@ -81,14 +82,14 @@ func cmdLogin(args []string) int {
 	case "copilot":
 		fmt.Println("Logging in to GitHub Copilot...")
 		provider := llm.NewCopilotProvider()
-		resp, err := provider.Login(nil)
+		resp, err := provider.Login(context.Background())
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 			return 1
 		}
 		fmt.Println(llm.FormatLoginPrompt(resp))
 		fmt.Println("Waiting for authorization...")
-		if err := provider.CompleteLogin(nil, resp.DeviceCode); err != nil {
+		if err := provider.CompleteLogin(context.Background(), resp.DeviceCode); err != nil {
 			fmt.Fprintf(os.Stderr, "Authorization failed: %v\n", err)
 			return 1
 		}
@@ -97,14 +98,14 @@ func cmdLogin(args []string) int {
 	case "codex":
 		fmt.Println("Logging in to OpenAI Codex...")
 		provider := llm.NewCodexProvider()
-		resp, err := provider.Login(nil)
+		resp, err := provider.Login(context.Background())
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 			return 1
 		}
 		fmt.Println(llm.FormatLoginPrompt(resp))
 		fmt.Println("Waiting for authorization...")
-		if err := provider.CompleteLogin(nil, resp.DeviceCode); err != nil {
+		if err := provider.CompleteLogin(context.Background(), resp.DeviceCode); err != nil {
 			fmt.Fprintf(os.Stderr, "Authorization failed: %v\n", err)
 			return 1
 		}
