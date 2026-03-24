@@ -117,8 +117,19 @@ func (c *OAuthClient) RequestDeviceCode(ctx context.Context) (*DeviceCodeRespons
 	}
 
 	if resp.StatusCode != http.StatusOK {
+		// Detect Cloudflare challenge (returns HTML instead of JSON)
+		bodyStr := string(body)
+		if strings.Contains(bodyStr, "cloudflare") || strings.Contains(bodyStr, "Just a moment") {
+			return nil, fmt.Errorf("blocked by Cloudflare protection (status %d).\n"+
+				"This provider requires browser-based authentication.\n"+
+				"Try one of these alternatives:\n"+
+				"  1. Use 'blackcat login copilot' instead (GitHub Copilot works from servers)\n"+
+				"  2. Login from your local machine and copy the token\n"+
+				"  3. Use an API key: blackcat config set openai_api_key sk-...",
+				resp.StatusCode)
+		}
 		return nil, fmt.Errorf("device code request failed (status %d): %s",
-			resp.StatusCode, string(body))
+			resp.StatusCode, bodyStr)
 	}
 
 	var dcResp DeviceCodeResponse

@@ -50,7 +50,7 @@ func run(args []string) int {
 		return cmdLogin(args[2:])
 	case "logout":
 		return cmdLogout(args[2:])
-	case "update":
+	case "update", "upgrade":
 		return cmdUpdate()
 	case "doctor":
 		return cmdDoctor()
