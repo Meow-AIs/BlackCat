@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	bcembed "github.com/meowai/blackcat/embed"
+	"github.com/meowai/blackcat/internal/updater"
 )
 
 var (
@@ -43,6 +44,8 @@ func run(args []string) int {
 		return cmdSkills(args[2:])
 	case "mcp":
 		return cmdMCP(args[2:])
+	case "update":
+		return cmdUpdate()
 	case "doctor":
 		return cmdDoctor()
 	case "help", "--help", "-h":
@@ -62,6 +65,39 @@ func runInteractive() {
 func runOneShot(prompt string) {
 	fmt.Printf("Processing: %s\n", prompt)
 	fmt.Println("(agent not yet implemented)")
+}
+
+func cmdUpdate() int {
+	fmt.Println("Checking for updates...")
+	u := updater.NewUpdater("Meow-AIs/BlackCat", version)
+	info, err := u.CheckForUpdate()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error checking for updates: %v\n", err)
+		return 1
+	}
+	if !info.Available {
+		fmt.Printf("Already on latest version (v%s)\n", info.CurrentVersion)
+		return 0
+	}
+	fmt.Printf("Update available: v%s → v%s\n", info.CurrentVersion, info.LatestVersion)
+	if info.DownloadURL == "" {
+		fmt.Println("No binary available for your platform. Download manually from:")
+		fmt.Printf("  https://github.com/Meow-AIs/BlackCat/releases/tag/v%s\n", info.LatestVersion)
+		return 0
+	}
+	fmt.Printf("Downloading %s...\n", info.AssetName)
+	data, err := u.DownloadUpdate(info.DownloadURL)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error downloading: %v\n", err)
+		return 1
+	}
+	fmt.Println("Installing...")
+	if err := updater.ReplaceBinary(data); err != nil {
+		fmt.Fprintf(os.Stderr, "Error installing: %v\n", err)
+		return 1
+	}
+	fmt.Printf("Updated to v%s. Restart BlackCat to use the new version.\n", info.LatestVersion)
+	return 0
 }
 
 func cmdVersion() {
@@ -332,6 +368,7 @@ func cmdHelp() {
 	fmt.Println("  schedule   Manage scheduled tasks (add, list, remove)")
 	fmt.Println("  skills     Manage learned skills (list, show)")
 	fmt.Println("  mcp        Manage MCP servers (add, list, remove)")
+	fmt.Println("  update     Update BlackCat to latest version")
 	fmt.Println("  doctor     Check system health")
 	fmt.Println("  help       Show this help message")
 }
