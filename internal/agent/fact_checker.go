@@ -18,7 +18,7 @@ const (
 // CheckedFact represents a single fact that has been checked.
 type CheckedFact struct {
 	Claim    string     // the asserted fact
-	Category string    // "code_reference", "tool_output", "general_assertion"
+	Category string     // "code_reference", "tool_output", "general_assertion"
 	Status   FactStatus // verification result
 	Evidence string     // supporting or contradicting evidence
 }

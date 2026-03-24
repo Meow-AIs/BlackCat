@@ -156,14 +156,14 @@ func registerPermissionAudit(engine *Engine) {
 // registerMemoryQuality filters low-quality memory entries.
 func registerMemoryQuality(engine *Engine) {
 	lowQualityEntries := map[string]bool{
-		"ok":      true,
-		"thanks":  true,
-		"yes":     true,
-		"no":      true,
-		"sure":    true,
-		"k":       true,
-		"ty":      true,
-		"thx":     true,
+		"ok":     true,
+		"thanks": true,
+		"yes":    true,
+		"no":     true,
+		"sure":   true,
+		"k":      true,
+		"ty":     true,
+		"thx":    true,
 	}
 
 	engine.Register(EventMemoryStore, "memory-quality", PriorityNormal, func(ctx HookContext) HookResult {

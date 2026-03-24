@@ -85,8 +85,8 @@ type WhatsAppConfig struct {
 
 // SchedulerConfig controls the built-in scheduler.
 type SchedulerConfig struct {
-	Enabled   bool             `yaml:"enabled"   json:"enabled"`
-	Schedules []ScheduleEntry  `yaml:"schedules" json:"schedules"`
+	Enabled   bool            `yaml:"enabled"   json:"enabled"`
+	Schedules []ScheduleEntry `yaml:"schedules" json:"schedules"`
 }
 
 // ScheduleEntry is a config-defined schedule.

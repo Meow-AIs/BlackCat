@@ -22,13 +22,13 @@ type Action struct {
 type ActionType string
 
 const (
-	ActionReadFile    ActionType = "read_file"
-	ActionWriteFile   ActionType = "write_file"
-	ActionShell       ActionType = "shell"
-	ActionGit         ActionType = "git"
-	ActionWeb         ActionType = "web"
-	ActionListDir     ActionType = "list_directory"
-	ActionSearchCode  ActionType = "search_code"
+	ActionReadFile   ActionType = "read_file"
+	ActionWriteFile  ActionType = "write_file"
+	ActionShell      ActionType = "shell"
+	ActionGit        ActionType = "git"
+	ActionWeb        ActionType = "web"
+	ActionListDir    ActionType = "list_directory"
+	ActionSearchCode ActionType = "search_code"
 )
 
 // Decision is the result of checking permissions for an action.

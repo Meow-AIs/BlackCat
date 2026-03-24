@@ -7,9 +7,9 @@ import (
 // VerificationResult holds the outcome of a verification check.
 type VerificationResult struct {
 	Valid      bool
-	Confidence float64  // 0-1
+	Confidence float64 // 0-1
 	Issues     []string
-	Suggestion string   // what to fix
+	Suggestion string // what to fix
 }
 
 // VerificationLevel controls how thoroughly verification is performed.

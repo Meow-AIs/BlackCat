@@ -16,7 +16,7 @@ const (
 // Finding represents a single security issue found by a scanner.
 type Finding struct {
 	ID          string            `json:"id"`
-	Scanner     string            `json:"scanner"`      // which scanner found it
+	Scanner     string            `json:"scanner"` // which scanner found it
 	Severity    Severity          `json:"severity"`
 	Title       string            `json:"title"`
 	Description string            `json:"description"`
@@ -29,11 +29,11 @@ type Finding struct {
 
 // ScanRequest configures what to scan.
 type ScanRequest struct {
-	Path       string            `json:"path"`                  // file or directory
-	Recursive  bool              `json:"recursive"`
-	IncludeExt []string          `json:"include_ext,omitempty"` // e.g., [".go", ".py"]
-	ExcludeDirs []string         `json:"exclude_dirs,omitempty"`
-	Options    map[string]string `json:"options,omitempty"`
+	Path        string            `json:"path"` // file or directory
+	Recursive   bool              `json:"recursive"`
+	IncludeExt  []string          `json:"include_ext,omitempty"` // e.g., [".go", ".py"]
+	ExcludeDirs []string          `json:"exclude_dirs,omitempty"`
+	Options     map[string]string `json:"options,omitempty"`
 }
 
 // ScanResult holds findings from a scan.

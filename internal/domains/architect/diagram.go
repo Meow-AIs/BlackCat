@@ -27,10 +27,10 @@ type C4Element struct {
 
 // C4Relationship represents a connection between two C4 elements.
 type C4Relationship struct {
-	From        string // element ID
-	To          string // element ID
-	Label       string
-	Technology  string
+	From       string // element ID
+	To         string // element ID
+	Label      string
+	Technology string
 }
 
 // C4Diagram holds the data for a C4 diagram.
@@ -50,10 +50,10 @@ type SequenceParticipant struct {
 
 // SequenceMessage represents a message between participants.
 type SequenceMessage struct {
-	From    string
-	To      string
-	Label   string
-	Type    string // "sync", "async", "reply"
+	From  string
+	To    string
+	Label string
+	Type  string // "sync", "async", "reply"
 }
 
 // SequenceDiagram holds the data for a sequence diagram.

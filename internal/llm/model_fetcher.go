@@ -63,13 +63,13 @@ var KnownModelMetadata = map[string]ModelMetadata{
 	"deepseek-reasoner": {MaxTokens: 65536, InputCost: 0.55, OutputCost: 2.19},
 
 	// Groq-hosted models (March 2026)
-	"llama-4-scout-17b-16e-instruct":  {MaxTokens: 131072, InputCost: 0.11, OutputCost: 0.34},
-	"llama-3.3-70b-versatile":         {MaxTokens: 131072, InputCost: 0.59, OutputCost: 0.79},
-	"llama-3.1-8b-instant":            {MaxTokens: 131072, InputCost: 0.05, OutputCost: 0.08},
-	"deepseek-r1-distill-llama-70b":   {MaxTokens: 131072, InputCost: 0.75, OutputCost: 0.99},
+	"llama-4-scout-17b-16e-instruct": {MaxTokens: 131072, InputCost: 0.11, OutputCost: 0.34},
+	"llama-3.3-70b-versatile":        {MaxTokens: 131072, InputCost: 0.59, OutputCost: 0.79},
+	"llama-3.1-8b-instant":           {MaxTokens: 131072, InputCost: 0.05, OutputCost: 0.08},
+	"deepseek-r1-distill-llama-70b":  {MaxTokens: 131072, InputCost: 0.75, OutputCost: 0.99},
 
 	// Google Gemini (via OpenRouter)
-	"gemini-2.5-pro":  {MaxTokens: 1000000, InputCost: 1.25, OutputCost: 10.0},
+	"gemini-2.5-pro":   {MaxTokens: 1000000, InputCost: 1.25, OutputCost: 10.0},
 	"gemini-2.5-flash": {MaxTokens: 1000000, InputCost: 0.15, OutputCost: 0.60},
 
 	// Meta Llama (via OpenRouter)

@@ -7,10 +7,10 @@ import (
 
 // ArchWorkflow describes a pre-built architecture workflow.
 type ArchWorkflow struct {
-	Name        string
-	Description string
-	Trigger     string // what triggers this workflow
-	Steps       []WorkflowStep
+	Name         string
+	Description  string
+	Trigger      string // what triggers this workflow
+	Steps        []WorkflowStep
 	OutputFormat string // "markdown", "mermaid", "yaml"
 }
 
@@ -75,9 +75,9 @@ func (w ArchWorkflow) FormatMarkdown() string {
 
 func architectureReviewWorkflow() ArchWorkflow {
 	return ArchWorkflow{
-		Name:        "architecture-review",
-		Description: "Perform a Well-Architected Framework assessment with recommendations and ADR output",
-		Trigger:     "User requests architecture review or WAF assessment",
+		Name:         "architecture-review",
+		Description:  "Perform a Well-Architected Framework assessment with recommendations and ADR output",
+		Trigger:      "User requests architecture review or WAF assessment",
 		OutputFormat: "markdown",
 		Steps: []WorkflowStep{
 			{
@@ -101,9 +101,9 @@ func architectureReviewWorkflow() ArchWorkflow {
 
 func techComparisonWorkflow() ArchWorkflow {
 	return ArchWorkflow{
-		Name:        "tech-comparison",
-		Description: "Build a weighted comparison matrix to evaluate technology options",
-		Trigger:     "User needs to choose between technology alternatives",
+		Name:         "tech-comparison",
+		Description:  "Build a weighted comparison matrix to evaluate technology options",
+		Trigger:      "User needs to choose between technology alternatives",
 		OutputFormat: "markdown",
 		Steps: []WorkflowStep{
 			{
@@ -132,9 +132,9 @@ func techComparisonWorkflow() ArchWorkflow {
 
 func databaseSelectionWorkflow() ArchWorkflow {
 	return ArchWorkflow{
-		Name:        "database-selection",
-		Description: "Guide database technology selection through a structured decision process",
-		Trigger:     "User needs to select a database technology for a new project or migration",
+		Name:         "database-selection",
+		Description:  "Guide database technology selection through a structured decision process",
+		Trigger:      "User needs to select a database technology for a new project or migration",
 		OutputFormat: "markdown",
 		Steps: []WorkflowStep{
 			{
@@ -163,9 +163,9 @@ func databaseSelectionWorkflow() ArchWorkflow {
 
 func capacityPlanningWorkflow() ArchWorkflow {
 	return ArchWorkflow{
-		Name:        "capacity-planning",
-		Description: "Estimate infrastructure capacity needs with growth projections",
-		Trigger:     "User needs to plan infrastructure capacity for a service",
+		Name:         "capacity-planning",
+		Description:  "Estimate infrastructure capacity needs with growth projections",
+		Trigger:      "User needs to plan infrastructure capacity for a service",
 		OutputFormat: "markdown",
 		Steps: []WorkflowStep{
 			{
@@ -194,9 +194,9 @@ func capacityPlanningWorkflow() ArchWorkflow {
 
 func diagramGenerationWorkflow() ArchWorkflow {
 	return ArchWorkflow{
-		Name:        "diagram-generation",
-		Description: "Generate C4 architecture diagrams from codebase analysis",
-		Trigger:     "User requests architecture diagrams or visualization",
+		Name:         "diagram-generation",
+		Description:  "Generate C4 architecture diagrams from codebase analysis",
+		Trigger:      "User requests architecture diagrams or visualization",
 		OutputFormat: "mermaid",
 		Steps: []WorkflowStep{
 			{
@@ -225,9 +225,9 @@ func diagramGenerationWorkflow() ArchWorkflow {
 
 func migrationPlanningWorkflow() ArchWorkflow {
 	return ArchWorkflow{
-		Name:        "migration-planning",
-		Description: "Plan a migration from current to target architecture with phased approach",
-		Trigger:     "User needs to migrate between architectures, platforms, or cloud providers",
+		Name:         "migration-planning",
+		Description:  "Plan a migration from current to target architecture with phased approach",
+		Trigger:      "User needs to migrate between architectures, platforms, or cloud providers",
 		OutputFormat: "markdown",
 		Steps: []WorkflowStep{
 			{
@@ -256,9 +256,9 @@ func migrationPlanningWorkflow() ArchWorkflow {
 
 func costOptimizationWorkflow() ArchWorkflow {
 	return ArchWorkflow{
-		Name:        "cost-optimization",
-		Description: "Analyze infrastructure costs and recommend optimizations",
-		Trigger:     "User wants to reduce infrastructure costs or optimize spending",
+		Name:         "cost-optimization",
+		Description:  "Analyze infrastructure costs and recommend optimizations",
+		Trigger:      "User wants to reduce infrastructure costs or optimize spending",
 		OutputFormat: "markdown",
 		Steps: []WorkflowStep{
 			{
@@ -287,9 +287,9 @@ func costOptimizationWorkflow() ArchWorkflow {
 
 func securityArchitectureWorkflow() ArchWorkflow {
 	return ArchWorkflow{
-		Name:        "security-architecture",
-		Description: "Perform threat modeling and security controls mapping",
-		Trigger:     "User needs security architecture review or threat modeling",
+		Name:         "security-architecture",
+		Description:  "Perform threat modeling and security controls mapping",
+		Trigger:      "User needs security architecture review or threat modeling",
 		OutputFormat: "markdown",
 		Steps: []WorkflowStep{
 			{
@@ -313,9 +313,9 @@ func securityArchitectureWorkflow() ArchWorkflow {
 
 func incidentPostmortemWorkflow() ArchWorkflow {
 	return ArchWorkflow{
-		Name:        "incident-postmortem",
-		Description: "Structure an incident postmortem with root cause analysis and action items",
-		Trigger:     "After a production incident that needs formal analysis",
+		Name:         "incident-postmortem",
+		Description:  "Structure an incident postmortem with root cause analysis and action items",
+		Trigger:      "After a production incident that needs formal analysis",
 		OutputFormat: "markdown",
 		Steps: []WorkflowStep{
 			{
@@ -349,9 +349,9 @@ func incidentPostmortemWorkflow() ArchWorkflow {
 
 func apiDesignReviewWorkflow() ArchWorkflow {
 	return ArchWorkflow{
-		Name:        "api-design-review",
-		Description: "Review API design for RESTful best practices, consistency, and usability",
-		Trigger:     "User wants to review an API design or OpenAPI specification",
+		Name:         "api-design-review",
+		Description:  "Review API design for RESTful best practices, consistency, and usability",
+		Trigger:      "User wants to review an API design or OpenAPI specification",
 		OutputFormat: "markdown",
 		Steps: []WorkflowStep{
 			{

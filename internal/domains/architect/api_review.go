@@ -26,10 +26,10 @@ type APIIssue struct {
 type RESTMaturityLevel int
 
 const (
-	Level0Swamp       RESTMaturityLevel = iota // single endpoint, POST everything
-	Level1Resources                             // individual resources
-	Level2HTTPVerbs                             // proper HTTP methods + status codes
-	Level3Hypermedia                            // HATEOAS
+	Level0Swamp      RESTMaturityLevel = iota // single endpoint, POST everything
+	Level1Resources                           // individual resources
+	Level2HTTPVerbs                           // proper HTTP methods + status codes
+	Level3Hypermedia                          // HATEOAS
 )
 
 var (

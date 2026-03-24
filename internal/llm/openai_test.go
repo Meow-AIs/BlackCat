@@ -14,8 +14,8 @@ type openaiChatResponse struct {
 	Object  string `json:"object"`
 	Model   string `json:"model"`
 	Choices []struct {
-		Index        int `json:"index"`
-		Message      struct {
+		Index   int `json:"index"`
+		Message struct {
 			Role      string `json:"role"`
 			Content   string `json:"content"`
 			ToolCalls []struct {
@@ -73,8 +73,8 @@ func TestOpenAIProviderChat(t *testing.T) {
 			Model:  "gpt-4.1",
 		}
 		resp.Choices = append(resp.Choices, struct {
-			Index        int `json:"index"`
-			Message      struct {
+			Index   int `json:"index"`
+			Message struct {
 				Role      string `json:"role"`
 				Content   string `json:"content"`
 				ToolCalls []struct {

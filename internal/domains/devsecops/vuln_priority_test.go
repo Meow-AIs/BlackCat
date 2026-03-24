@@ -8,10 +8,10 @@ import "testing"
 
 func TestPrioritizeVuln_P0_KEVRansomware(t *testing.T) {
 	v := VulnEntry{
-		CVEID:     "CVE-2024-1234",
-		CVSSScore: 9.8,
-		EPSSScore: 0.95,
-		KEVListed: true,
+		CVEID:      "CVE-2024-1234",
+		CVSSScore:  9.8,
+		EPSSScore:  0.95,
+		KEVListed:  true,
 		Ransomware: true,
 		Reachable:  true,
 	}

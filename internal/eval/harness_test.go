@@ -209,25 +209,25 @@ func TestRunAll(t *testing.T) {
 	h := NewHarness()
 	h.AddCases([]TestCase{
 		{
-			ID:       "t1",
-			Name:     "pass test",
-			Category: CatCoding,
+			ID:         "t1",
+			Name:       "pass test",
+			Category:   CatCoding,
 			Difficulty: Easy,
-			Expected: []string{"correct"},
+			Expected:   []string{"correct"},
 		},
 		{
-			ID:       "t2",
-			Name:     "fail test",
-			Category: CatSecurity,
+			ID:         "t2",
+			Name:       "fail test",
+			Category:   CatSecurity,
 			Difficulty: Hard,
-			Expected: []string{"missing pattern"},
+			Expected:   []string{"missing pattern"},
 		},
 		{
-			ID:       "t3",
-			Name:     "another pass",
-			Category: CatCoding,
+			ID:         "t3",
+			Name:       "another pass",
+			Category:   CatCoding,
 			Difficulty: Easy,
-			Expected: []string{"good"},
+			Expected:   []string{"good"},
 		},
 	})
 

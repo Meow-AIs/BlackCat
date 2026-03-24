@@ -24,7 +24,7 @@ type SSHConfig struct {
 	MaxAuthTries        int    // 4
 	Protocol            int    // 2
 	AllowUsers          []string
-	ClientAliveInterval int // 300
+	ClientAliveInterval int    // 300
 	X11Forwarding       string // "no"
 }
 

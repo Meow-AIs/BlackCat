@@ -22,8 +22,8 @@ type CycloneDXBOM struct {
 
 // BOMMetadata holds SBOM metadata.
 type BOMMetadata struct {
-	Timestamp string     `json:"timestamp"`
-	Tools     []BOMTool  `json:"tools,omitempty"`
+	Timestamp string        `json:"timestamp"`
+	Tools     []BOMTool     `json:"tools,omitempty"`
 	Component *BOMComponent `json:"component,omitempty"`
 }
 
@@ -36,12 +36,12 @@ type BOMTool struct {
 
 // BOMComponent represents a software component/dependency.
 type BOMComponent struct {
-	Type       string `json:"type"` // "library", "application", "framework"
-	Name       string `json:"name"`
-	Version    string `json:"version"`
-	PURL       string `json:"purl,omitempty"` // Package URL (https://github.com/package-url/purl-spec)
-	Ecosystem  string `json:"ecosystem,omitempty"`
-	License    string `json:"license,omitempty"`
+	Type      string `json:"type"` // "library", "application", "framework"
+	Name      string `json:"name"`
+	Version   string `json:"version"`
+	PURL      string `json:"purl,omitempty"` // Package URL (https://github.com/package-url/purl-spec)
+	Ecosystem string `json:"ecosystem,omitempty"`
+	License   string `json:"license,omitempty"`
 }
 
 // GenerateSBOM scans a project directory for dependency manifests and produces

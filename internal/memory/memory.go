@@ -18,7 +18,7 @@ type Entry struct {
 	Content   string            `json:"content"`
 	Metadata  map[string]string `json:"metadata,omitempty"`
 	Score     float64           `json:"score"`      // relevance/decay score
-	CreatedAt int64             `json:"created_at"`  // unix timestamp
+	CreatedAt int64             `json:"created_at"` // unix timestamp
 	UpdatedAt int64             `json:"updated_at"`
 	UserID    string            `json:"user_id,omitempty"` // for channel scoping
 }
@@ -40,7 +40,7 @@ type SearchResult struct {
 
 // Snapshot is a frozen memory context injected at session start.
 type Snapshot struct {
-	Content    string `json:"content"`     // compiled text (~800 tokens)
+	Content    string `json:"content"` // compiled text (~800 tokens)
 	TokenCount int    `json:"token_count"`
 	EntryCount int    `json:"entry_count"`
 }

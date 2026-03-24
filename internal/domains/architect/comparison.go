@@ -20,9 +20,9 @@ type TechOption struct {
 
 // ComparisonResult holds the evaluation of one technology.
 type ComparisonResult struct {
-	Name           string  `json:"name"`
-	WeightedScore  float64 `json:"weighted_score"`
-	Rank           int     `json:"rank"`
+	Name          string  `json:"name"`
+	WeightedScore float64 `json:"weighted_score"`
+	Rank          int     `json:"rank"`
 }
 
 // ComparisonMatrix evaluates technologies against weighted criteria.

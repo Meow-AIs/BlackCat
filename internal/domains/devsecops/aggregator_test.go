@@ -21,16 +21,16 @@ func TestAddFinding(t *testing.T) {
 	now := time.Now()
 
 	agg.AddFinding(AggregatedFinding{
-		ID:        "f1",
-		CVEID:     "CVE-2024-1234",
-		Title:     "SQL Injection",
-		Severity:  "critical",
-		Source:    "semgrep",
-		FirstSeen: now,
-		LastSeen:  now,
-		Count:     1,
-		Status:    "open",
-		FilePath:  "app/db.go",
+		ID:         "f1",
+		CVEID:      "CVE-2024-1234",
+		Title:      "SQL Injection",
+		Severity:   "critical",
+		Source:     "semgrep",
+		FirstSeen:  now,
+		LastSeen:   now,
+		Count:      1,
+		Status:     "open",
+		FilePath:   "app/db.go",
 		Compliance: []string{"SOC2", "PCI-DSS"},
 	})
 

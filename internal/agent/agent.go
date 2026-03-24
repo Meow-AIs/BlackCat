@@ -23,9 +23,9 @@ type Session struct {
 
 // Response is what the agent produces after processing input.
 type Response struct {
-	Text       string      `json:"text"`
-	ToolCalls  []ToolUse   `json:"tool_calls,omitempty"`
-	Done       bool        `json:"done"`
+	Text      string    `json:"text"`
+	ToolCalls []ToolUse `json:"tool_calls,omitempty"`
+	Done      bool      `json:"done"`
 }
 
 // ToolUse records a tool invocation during a session.

@@ -107,10 +107,10 @@ func TestLoadAndSaveScriptHooks(t *testing.T) {
 			},
 		},
 		{
-			Name:    "log-all",
-			Event:   EventAfterTool,
+			Name:     "log-all",
+			Event:    EventAfterTool,
 			Priority: PriorityLast,
-			Enabled: true,
+			Enabled:  true,
 			Action: HookAction{
 				Type:    "log",
 				Message: "Tool executed: {{.tool_name}}",

@@ -168,11 +168,11 @@ func TestSignalFromToolValidity(t *testing.T) {
 
 func TestSignalFromReasoningCompleteness(t *testing.T) {
 	complete := ReasoningStep{
-		Thought:    "thinking",
-		Action:     "do something",
+		Thought:     "thinking",
+		Action:      "do something",
 		Observation: "result",
-		Critique:   "good",
-		Confidence: 0.8,
+		Critique:    "good",
+		Confidence:  0.8,
 	}
 	sig := SignalFromReasoningCompleteness(complete)
 	if sig.Score != 1.0 {

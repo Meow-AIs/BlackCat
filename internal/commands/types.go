@@ -14,10 +14,10 @@ type CommandHandler func(args []string) CommandResult
 // CommandDef defines a slash command with its metadata and handler.
 type CommandDef struct {
 	Name        string
-	Aliases     []string              // e.g., "/h" for "/help"
+	Aliases     []string // e.g., "/h" for "/help"
 	Description string
-	Usage       string                // e.g., "/memory search <query>"
-	Category    string                // "general", "memory", "skills", "config", "git", "debug"
+	Usage       string // e.g., "/memory search <query>"
+	Category    string // "general", "memory", "skills", "config", "git", "debug"
 	Handler     CommandHandler
 	SubCommands map[string]CommandDef // for nested commands like /memory search, /memory stats
 }

@@ -9,7 +9,7 @@ import (
 type CostEstimateInput struct {
 	Provider       CloudProvider
 	ComputeUnits   int
-	ComputeType    string  // "small", "medium", "large", "xlarge"
+	ComputeType    string // "small", "medium", "large", "xlarge"
 	StorageGB      float64
 	TransferOutGB  float64
 	DatabaseType   string // "rds-small", "rds-medium", "rds-large"

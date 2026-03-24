@@ -22,8 +22,8 @@ type Message struct {
 
 // ToolCall represents a tool invocation requested by the model.
 type ToolCall struct {
-	ID       string `json:"id"`
-	Name     string `json:"name"`
+	ID        string `json:"id"`
+	Name      string `json:"name"`
 	Arguments string `json:"arguments"` // JSON string
 }
 
@@ -46,11 +46,11 @@ type ChatRequest struct {
 
 // ChatResponse is the output of a Chat call.
 type ChatResponse struct {
-	Content    string     `json:"content"`
-	ToolCalls  []ToolCall `json:"tool_calls,omitempty"`
-	Model      string     `json:"model"`
-	Usage      Usage      `json:"usage"`
-	FinishReason string   `json:"finish_reason"`
+	Content      string     `json:"content"`
+	ToolCalls    []ToolCall `json:"tool_calls,omitempty"`
+	Model        string     `json:"model"`
+	Usage        Usage      `json:"usage"`
+	FinishReason string     `json:"finish_reason"`
 }
 
 // Usage tracks token consumption.
@@ -71,11 +71,11 @@ type StreamChunk struct {
 
 // ModelInfo describes a model available from a provider.
 type ModelInfo struct {
-	ID          string `json:"id"`
-	Name        string `json:"name"`
-	MaxTokens   int    `json:"max_tokens"`
-	InputCost   float64 `json:"input_cost_per_1m"`  // USD per 1M tokens
-	OutputCost  float64 `json:"output_cost_per_1m"` // USD per 1M tokens
+	ID         string  `json:"id"`
+	Name       string  `json:"name"`
+	MaxTokens  int     `json:"max_tokens"`
+	InputCost  float64 `json:"input_cost_per_1m"`  // USD per 1M tokens
+	OutputCost float64 `json:"output_cost_per_1m"` // USD per 1M tokens
 }
 
 // Provider is the interface that all LLM backends must implement.

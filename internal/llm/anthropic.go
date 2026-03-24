@@ -37,11 +37,11 @@ func (p *AnthropicProvider) Models() []ModelInfo {
 }
 
 type anthropicRequest struct {
-	Model     string             `json:"model"`
-	Messages  []anthropicMsg     `json:"messages"`
-	MaxTokens int                `json:"max_tokens"`
-	System    string             `json:"system,omitempty"`
-	Tools     []anthropicTool    `json:"tools,omitempty"`
+	Model     string          `json:"model"`
+	Messages  []anthropicMsg  `json:"messages"`
+	MaxTokens int             `json:"max_tokens"`
+	System    string          `json:"system,omitempty"`
+	Tools     []anthropicTool `json:"tools,omitempty"`
 }
 
 type anthropicMsg struct {

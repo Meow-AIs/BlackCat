@@ -63,10 +63,10 @@ func TestOllamaProvider_Chat(t *testing.T) {
 		}
 
 		resp := map[string]any{
-			"model":      "llama3",
-			"message":    map[string]any{"role": "assistant", "content": "Hello there!"},
-			"done":       true,
-			"total_duration":   5000000000,
+			"model":             "llama3",
+			"message":           map[string]any{"role": "assistant", "content": "Hello there!"},
+			"done":              true,
+			"total_duration":    5000000000,
 			"prompt_eval_count": 10,
 			"eval_count":        5,
 		}

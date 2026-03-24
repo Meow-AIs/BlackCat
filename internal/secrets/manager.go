@@ -21,11 +21,11 @@ var validName = regexp.MustCompile(`^[a-z0-9][a-z0-9._-]{0,126}[a-z0-9]$`)
 //	val, err := mgr.Get(ctx, "openai_api_key", secrets.ScopeGlobal)
 //	defer secrets.SecureWipe(val)
 type Manager struct {
-	backends  []Backend      // ordered by preference: keychain > file > env
-	primary   Backend        // first available backend (used for writes)
-	meta      MetadataStore
-	audit     AuditLog
-	projectPath string       // current project root (for scope resolution)
+	backends    []Backend // ordered by preference: keychain > file > env
+	primary     Backend   // first available backend (used for writes)
+	meta        MetadataStore
+	audit       AuditLog
+	projectPath string // current project root (for scope resolution)
 }
 
 // ManagerOpts configures the Manager.

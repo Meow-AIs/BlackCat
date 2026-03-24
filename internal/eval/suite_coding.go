@@ -91,9 +91,9 @@ func fetchAll(urls []string) []string {
     }
     return out
 }`,
-			Expected:  []string{"goroutine", "leak", "error", "channel", "block"},
-			Tags:      []string{"code-review"},
-			Timeout:   30 * time.Second,
+			Expected: []string{"goroutine", "leak", "error", "channel", "block"},
+			Tags:     []string{"code-review"},
+			Timeout:  30 * time.Second,
 		},
 
 		// --- Error Handling (4 cases) ---
@@ -132,9 +132,9 @@ func CreateOrder(ctx context.Context, order Order) error {
     }
     return nil
 }`,
-			Expected:  []string{"fmt.Errorf", "%w", "wrap", "context", "stack"},
-			Tags:      []string{"error-handling"},
-			Timeout:   30 * time.Second,
+			Expected: []string{"fmt.Errorf", "%w", "wrap", "context", "stack"},
+			Tags:     []string{"error-handling"},
+			Timeout:  30 * time.Second,
 		},
 		{
 			ID:         "coding-007",
@@ -175,9 +175,9 @@ func GetCache(key string) string {
 }
 
 // Called from multiple goroutines`,
-			Expected:  []string{"race", "mutex", "sync.Map", "concurrent"},
-			Tags:      []string{"concurrency"},
-			Timeout:   30 * time.Second,
+			Expected: []string{"race", "mutex", "sync.Map", "concurrent"},
+			Tags:     []string{"concurrency"},
+			Timeout:  30 * time.Second,
 		},
 		{
 			ID:         "coding-010",
@@ -215,9 +215,9 @@ func transferB() {
     defer mu1.Unlock()
     // transfer logic
 }`,
-			Expected:  []string{"deadlock", "lock order", "consistent", "mu1", "mu2"},
-			Tags:      []string{"concurrency"},
-			Timeout:   30 * time.Second,
+			Expected: []string{"deadlock", "lock order", "consistent", "mu1", "mu2"},
+			Tags:     []string{"concurrency"},
+			Timeout:  30 * time.Second,
 		},
 		{
 			ID:         "coding-012",
@@ -226,9 +226,9 @@ func transferB() {
 			Difficulty: Medium,
 			Input:      "Explain how to properly propagate context.Context through a Go application for cancellation, timeouts, and tracing. Show the anti-patterns to avoid.",
 			Expected:   []string{"context.Context", "first parameter", "Background", "WithCancel", "WithTimeout"},
-			Forbidden: []string{"global variable"},
-			Tags:      []string{"concurrency"},
-			Timeout:   30 * time.Second,
+			Forbidden:  []string{"global variable"},
+			Tags:       []string{"concurrency"},
+			Timeout:    30 * time.Second,
 		},
 
 		// --- API Design (3 cases) ---
@@ -242,9 +242,9 @@ POST /api/getUser
 POST /api/deleteUser
 GET  /api/users/create?name=John
 GET  /api/updateUser/123?name=Jane`,
-			Expected:  []string{"verb", "GET", "POST", "DELETE", "noun", "HTTP method"},
-			Tags:      []string{"api-design"},
-			Timeout:   30 * time.Second,
+			Expected: []string{"verb", "GET", "POST", "DELETE", "noun", "HTTP method"},
+			Tags:     []string{"api-design"},
+			Timeout:  30 * time.Second,
 		},
 		{
 			ID:         "coding-014",
@@ -283,9 +283,9 @@ func ShippingCost(weight float64, expedited bool, country string) (float64, erro
     return base, nil
 }
 Existing tests: TestShippingCost_Normal, TestShippingCost_Expedited`,
-			Expected:  []string{"boundary", "negative", "zero", "international", "country", "error"},
-			Tags:      []string{"testing"},
-			Timeout:   30 * time.Second,
+			Expected: []string{"boundary", "negative", "zero", "international", "country", "error"},
+			Tags:     []string{"testing"},
+			Timeout:  30 * time.Second,
 		},
 		{
 			ID:         "coding-017",

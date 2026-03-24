@@ -1,7 +1,8 @@
 // Package secrets provides secure secret management for BlackCat.
 //
 // Architecture:
-//   OS Keychain (preferred) > Encrypted File (fallback) > Environment Variables (last resort)
+//
+//	OS Keychain (preferred) > Encrypted File (fallback) > Environment Variables (last resort)
 //
 // Secrets are never stored in plaintext config files, never passed to LLM context,
 // and automatically redacted from all tool outputs, logs, and memory entries.
@@ -107,11 +108,11 @@ type AuditEntry struct {
 
 // ExpiryStatus summarizes a secret's rotation health.
 type ExpiryStatus struct {
-	SecretRef  SecretRef `json:"secret_ref"`
-	ExpiresAt  time.Time `json:"expires_at,omitempty"`
-	DaysLeft   int       `json:"days_left"`
-	IsExpired  bool      `json:"is_expired"`
-	NeedsRotation bool  `json:"needs_rotation"`
+	SecretRef     SecretRef `json:"secret_ref"`
+	ExpiresAt     time.Time `json:"expires_at,omitempty"`
+	DaysLeft      int       `json:"days_left"`
+	IsExpired     bool      `json:"is_expired"`
+	NeedsRotation bool      `json:"needs_rotation"`
 }
 
 // MarshalJSON prevents accidental serialization of SecretMetadata with any

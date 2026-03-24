@@ -4,10 +4,10 @@ import "sync"
 
 // CostTracker tracks token usage and estimated cost per session.
 type CostTracker struct {
-	mu       sync.Mutex
-	entries  []CostEntry
-	budget   float64 // max USD per session, 0 = unlimited
-	warnAt   float64
+	mu      sync.Mutex
+	entries []CostEntry
+	budget  float64 // max USD per session, 0 = unlimited
+	warnAt  float64
 }
 
 // CostEntry records a single API call's cost.
@@ -20,12 +20,12 @@ type CostEntry struct {
 
 // CostSummary is the aggregate cost for a session.
 type CostSummary struct {
-	TotalCost        float64 `json:"total_cost"`
-	TotalPrompt      int     `json:"total_prompt_tokens"`
-	TotalCompletion  int     `json:"total_completion_tokens"`
-	Entries          int     `json:"entries"`
-	BudgetRemaining  float64 `json:"budget_remaining"`
-	OverBudget       bool    `json:"over_budget"`
+	TotalCost       float64 `json:"total_cost"`
+	TotalPrompt     int     `json:"total_prompt_tokens"`
+	TotalCompletion int     `json:"total_completion_tokens"`
+	Entries         int     `json:"entries"`
+	BudgetRemaining float64 `json:"budget_remaining"`
+	OverBudget      bool    `json:"over_budget"`
 }
 
 // NewCostTracker creates a tracker with optional budget.

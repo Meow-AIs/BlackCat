@@ -18,7 +18,7 @@ type SessionEntry struct {
 type SessionSearchResult struct {
 	SessionID string
 	Matches   []SessionEntry
-	Summary   string  // summarized by auxiliary model
+	Summary   string // summarized by auxiliary model
 	Score     float64
 }
 

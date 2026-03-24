@@ -136,7 +136,7 @@ func GetReliabilityPattern(name string) (ReliabilityPattern, bool) {
 type SLI struct {
 	Name          string
 	Description   string
-	Metric        string  // "latency_p99", "error_rate", "availability", "throughput"
+	Metric        string // "latency_p99", "error_rate", "availability", "throughput"
 	Unit          string
 	GoodThreshold float64
 }

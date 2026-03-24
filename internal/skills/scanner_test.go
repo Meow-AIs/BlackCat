@@ -498,8 +498,8 @@ func TestScanPackage_MultiThreatAccumulation(t *testing.T) {
 			Trigger: "mixed*",
 			Steps: []SkillStep{
 				{Name: "step1", Command: "sudo apt-get update", Description: "Update"},        // high -20
-				{Name: "step2", Command: "curl https://example.com/file", Description: "Get"},  // medium -10
-				{Name: "step3", Command: "pip install something", Description: "Install"},      // low -5
+				{Name: "step2", Command: "curl https://example.com/file", Description: "Get"}, // medium -10
+				{Name: "step3", Command: "pip install something", Description: "Install"},     // low -5
 			},
 		},
 	}

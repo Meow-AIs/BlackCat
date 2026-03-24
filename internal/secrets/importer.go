@@ -25,7 +25,7 @@ const (
 
 // ImportResult summarizes the outcome of an import operation.
 type ImportResult struct {
-	Source    ImportSource `json:"source"`
+	Source   ImportSource `json:"source"`
 	Imported int          `json:"imported"`
 	Skipped  int          `json:"skipped"`
 	Errors   []string     `json:"errors,omitempty"`
@@ -183,11 +183,11 @@ func (imp *Importer) ImportJSON(ctx context.Context, data []byte, scope Scope) (
 
 	var payload struct {
 		Secrets []struct {
-			Name    string `json:"name"`
-			Value   string `json:"value"`
-			Type    string `json:"type"`
-			EnvVar  string `json:"env_var"`
-			Tags    []string `json:"tags,omitempty"`
+			Name   string   `json:"name"`
+			Value  string   `json:"value"`
+			Type   string   `json:"type"`
+			EnvVar string   `json:"env_var"`
+			Tags   []string `json:"tags,omitempty"`
 		} `json:"secrets"`
 	}
 
@@ -251,8 +251,8 @@ func (imp *Importer) ExportEncrypted(ctx context.Context, scope Scope, passphras
 	}
 
 	payload := struct {
-		Secrets []exportEntry `json:"secrets"`
-		Exported time.Time    `json:"exported_at"`
+		Secrets  []exportEntry `json:"secrets"`
+		Exported time.Time     `json:"exported_at"`
 	}{
 		Secrets:  entries,
 		Exported: time.Now(),

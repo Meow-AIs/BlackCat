@@ -61,13 +61,13 @@ type kevFeedJSON struct {
 }
 
 type kevVulnJSON struct {
-	CVEID                       string `json:"cveID"`
-	VendorProject               string `json:"vendorProject"`
-	Product                     string `json:"product"`
-	DateAdded                   string `json:"dateAdded"`
-	DueDate                     string `json:"dueDate"`
-	KnownRansomwareCampaignUse  string `json:"knownRansomwareCampaignUse"`
-	ShortDescription            string `json:"shortDescription"`
+	CVEID                      string `json:"cveID"`
+	VendorProject              string `json:"vendorProject"`
+	Product                    string `json:"product"`
+	DateAdded                  string `json:"dateAdded"`
+	DueDate                    string `json:"dueDate"`
+	KnownRansomwareCampaignUse string `json:"knownRansomwareCampaignUse"`
+	ShortDescription           string `json:"shortDescription"`
 }
 
 // ParseKEVFeed parses raw JSON from the CISA KEV catalog into KEVEntry slices.

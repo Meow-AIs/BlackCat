@@ -162,8 +162,10 @@ func NewDockerfileScanner() *DockerfileScanner {
 	return &DockerfileScanner{rules: DefaultDockerfileRules()}
 }
 
-func (s *DockerfileScanner) Name() string        { return "scan_dockerfile" }
-func (s *DockerfileScanner) Description() string  { return "Analyze Dockerfiles for security misconfigurations" }
+func (s *DockerfileScanner) Name() string { return "scan_dockerfile" }
+func (s *DockerfileScanner) Description() string {
+	return "Analyze Dockerfiles for security misconfigurations"
+}
 
 func (s *DockerfileScanner) Scan(ctx context.Context, req ScanRequest) (ScanResult, error) {
 	result := ScanResult{Scanner: s.Name()}

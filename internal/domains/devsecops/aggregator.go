@@ -15,7 +15,7 @@ type AggregatedFinding struct {
 	Source     string    `json:"source"`   // scanner name
 	FirstSeen  time.Time `json:"first_seen"`
 	LastSeen   time.Time `json:"last_seen"`
-	Count      int       `json:"count"` // how many times detected
+	Count      int       `json:"count"`  // how many times detected
 	Status     string    `json:"status"` // open, resolved, false_positive, accepted
 	FilePath   string    `json:"file_path"`
 	LineNumber int       `json:"line_number"`

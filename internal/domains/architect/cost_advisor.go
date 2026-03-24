@@ -7,7 +7,7 @@ import (
 
 // CostWaste represents a single identified cost optimization opportunity.
 type CostWaste struct {
-	Category    string  // "idle_compute", "oversized", "unused_storage", "unattached_resources", "data_transfer", "missing_reserved"
+	Category    string // "idle_compute", "oversized", "unused_storage", "unattached_resources", "data_transfer", "missing_reserved"
 	Resource    string
 	CurrentCost float64
 	OptimalCost float64
@@ -27,9 +27,9 @@ func NewCostAdvisor() *CostAdvisor {
 
 // ResourceDescription describes a cloud resource for cost analysis.
 type ResourceDescription struct {
-	Type   string            // "ec2", "rds", "s3", "lambda", "ecs", "ebs", etc.
-	Size   string            // "t3.xlarge", "db.r5.2xlarge"
-	Usage  float64           // 0-1 utilization
+	Type   string  // "ec2", "rds", "s3", "lambda", "ecs", "ebs", etc.
+	Size   string  // "t3.xlarge", "db.r5.2xlarge"
+	Usage  float64 // 0-1 utilization
 	Region string
 	Tags   map[string]string
 }

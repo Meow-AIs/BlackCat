@@ -66,8 +66,10 @@ func NewSecretsScanner() *SecretsScanner {
 	}
 }
 
-func (s *SecretsScanner) Name() string        { return "scan_secrets" }
-func (s *SecretsScanner) Description() string  { return "Detect hardcoded secrets in files using Gitleaks-compatible rules" }
+func (s *SecretsScanner) Name() string { return "scan_secrets" }
+func (s *SecretsScanner) Description() string {
+	return "Detect hardcoded secrets in files using Gitleaks-compatible rules"
+}
 
 func (s *SecretsScanner) Scan(ctx context.Context, req ScanRequest) (ScanResult, error) {
 	result := ScanResult{Scanner: s.Name()}

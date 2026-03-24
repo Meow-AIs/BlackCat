@@ -125,7 +125,7 @@ func TestCompressMessages_ShortConversation_NotCompressed(t *testing.T) {
 func TestCompressMessages_LongConversation_IsCompressed(t *testing.T) {
 	msgs := buildConversation(20) // 41 messages
 	opts := DefaultCompressOptions()
-	opts.MaxTokens = 50          // force compression
+	opts.MaxTokens = 50 // force compression
 	opts.ProtectFirst = 2
 	opts.ProtectLast = 4
 
@@ -429,11 +429,11 @@ func TestFindToolPairBoundaries_NoTools(t *testing.T) {
 
 func TestFindToolPairBoundaries_WithToolPair(t *testing.T) {
 	msgs := []llm.Message{
-		msg(llm.RoleSystem, "system"),           // 0 — safe
-		msg(llm.RoleUser, "do something"),        // 1 — safe
-		toolCallMsg("calling", "tc-1"),            // 2 — NOT safe (start of pair)
-		toolResultMsg("result", "tc-1"),           // 3 — NOT safe (inside pair)
-		msg(llm.RoleAssistant, "done"),            // 4 — safe
+		msg(llm.RoleSystem, "system"),     // 0 — safe
+		msg(llm.RoleUser, "do something"), // 1 — safe
+		toolCallMsg("calling", "tc-1"),    // 2 — NOT safe (start of pair)
+		toolResultMsg("result", "tc-1"),   // 3 — NOT safe (inside pair)
+		msg(llm.RoleAssistant, "done"),    // 4 — safe
 	}
 
 	boundaries := FindToolPairBoundaries(msgs)
@@ -494,12 +494,12 @@ func TestFindToolPairBoundaries_Empty(t *testing.T) {
 
 func TestFindToolPairBoundaries_ConsecutiveToolPairs(t *testing.T) {
 	msgs := []llm.Message{
-		msg(llm.RoleUser, "start"),           // 0 safe
-		toolCallMsg("first", "tc-1"),         // 1 unsafe
-		toolResultMsg("r1", "tc-1"),          // 2 unsafe
-		toolCallMsg("second", "tc-2"),        // 3 unsafe
-		toolResultMsg("r2", "tc-2"),          // 4 unsafe
-		msg(llm.RoleAssistant, "done"),       // 5 safe
+		msg(llm.RoleUser, "start"),     // 0 safe
+		toolCallMsg("first", "tc-1"),   // 1 unsafe
+		toolResultMsg("r1", "tc-1"),    // 2 unsafe
+		toolCallMsg("second", "tc-2"),  // 3 unsafe
+		toolResultMsg("r2", "tc-2"),    // 4 unsafe
+		msg(llm.RoleAssistant, "done"), // 5 safe
 	}
 
 	boundaries := FindToolPairBoundaries(msgs)

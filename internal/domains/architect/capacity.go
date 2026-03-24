@@ -30,10 +30,10 @@ type CapacityEstimate struct {
 }
 
 const (
-	secondsPerDay     = 86400.0
-	bytesPerGB        = 1024.0 * 1024.0 * 1024.0
-	bytesPerMbit      = 125000.0
-	rpsPerInstance    = 1000.0 // assumed capacity per instance
+	secondsPerDay  = 86400.0
+	bytesPerGB     = 1024.0 * 1024.0 * 1024.0
+	bytesPerMbit   = 125000.0
+	rpsPerInstance = 1000.0 // assumed capacity per instance
 )
 
 // EstimateCapacity computes capacity requirements from the given input.

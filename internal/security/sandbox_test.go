@@ -130,14 +130,14 @@ func TestFilterEnvironmentPreservesSafeVars(t *testing.T) {
 	// must not strip them when they do exist. We inject them via t.Setenv and
 	// verify they survive the filter.
 	safeVars := map[string]string{
-		"PATH":    "/usr/bin:/bin",
-		"HOME":    "/home/testuser",
-		"USER":    "testuser",
-		"TMPDIR":  "/tmp",
-		"GOPATH":  "/home/testuser/go",
-		"GOROOT":  "/usr/local/go",
-		"TERM":    "xterm-256color",
-		"LANG":    "en_US.UTF-8",
+		"PATH":   "/usr/bin:/bin",
+		"HOME":   "/home/testuser",
+		"USER":   "testuser",
+		"TMPDIR": "/tmp",
+		"GOPATH": "/home/testuser/go",
+		"GOROOT": "/usr/local/go",
+		"TERM":   "xterm-256color",
+		"LANG":   "en_US.UTF-8",
 	}
 
 	for k, v := range safeVars {

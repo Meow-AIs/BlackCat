@@ -38,10 +38,10 @@ func TestAllDomains_ContainsExpected(t *testing.T) {
 func TestDefaultManager_RegisterAndGet(t *testing.T) {
 	mgr := NewDefaultManager()
 	cfg := DomainConfig{
-		Name:        DomainDevSecOps,
-		Description: "DevSecOps specialization",
+		Name:         DomainDevSecOps,
+		Description:  "DevSecOps specialization",
 		SystemPrompt: "You are a DevSecOps expert.",
-		Tools:       []string{"scan_secrets", "scan_deps"},
+		Tools:        []string{"scan_secrets", "scan_deps"},
 	}
 
 	if err := mgr.Register(cfg); err != nil {

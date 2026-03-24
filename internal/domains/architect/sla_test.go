@@ -193,8 +193,8 @@ func TestInfraRecommendation_FormatMarkdown(t *testing.T) {
 
 func TestMapSLAToInfra_BackupFrequency(t *testing.T) {
 	tests := []struct {
-		tier     SLATier
-		maxFreq  time.Duration
+		tier    SLATier
+		maxFreq time.Duration
 	}{
 		{SLATier999, 24 * time.Hour},
 		{SLATier9999, 6 * time.Hour},

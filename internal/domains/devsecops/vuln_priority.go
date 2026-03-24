@@ -5,13 +5,13 @@ import "math"
 // VulnEntry represents a vulnerability with scoring data from multiple sources.
 type VulnEntry struct {
 	CVEID         string  `json:"cve_id"`
-	CVSSScore     float64 `json:"cvss_score"`      // 0-10 (CVSS v4.0)
-	EPSSScore     float64 `json:"epss_score"`       // 0-1.0 (30-day exploitation probability)
-	KEVListed     bool    `json:"kev_listed"`       // CISA Known Exploited Vulnerabilities
-	Ransomware    bool    `json:"ransomware"`       // knownRansomwareCampaignUse from KEV
-	Reachable     bool    `json:"reachable"`        // is the vulnerable code path callable?
-	AssetCritical bool    `json:"asset_critical"`   // is the affected system business-critical?
-	FixAvailable  bool    `json:"fix_available"`    // is a patched version published?
+	CVSSScore     float64 `json:"cvss_score"`     // 0-10 (CVSS v4.0)
+	EPSSScore     float64 `json:"epss_score"`     // 0-1.0 (30-day exploitation probability)
+	KEVListed     bool    `json:"kev_listed"`     // CISA Known Exploited Vulnerabilities
+	Ransomware    bool    `json:"ransomware"`     // knownRansomwareCampaignUse from KEV
+	Reachable     bool    `json:"reachable"`      // is the vulnerable code path callable?
+	AssetCritical bool    `json:"asset_critical"` // is the affected system business-critical?
+	FixAvailable  bool    `json:"fix_available"`  // is a patched version published?
 	Description   string  `json:"description"`
 	AffectedPkg   string  `json:"affected_package"`
 }

@@ -5,9 +5,9 @@ type HookEvent string
 
 const (
 	// Tool events.
-	EventBeforeTool  HookEvent = "before_tool"
-	EventAfterTool   HookEvent = "after_tool"
-	EventToolError   HookEvent = "tool_error"
+	EventBeforeTool HookEvent = "before_tool"
+	EventAfterTool  HookEvent = "after_tool"
+	EventToolError  HookEvent = "tool_error"
 
 	// Session events.
 	EventSessionStart HookEvent = "session_start"

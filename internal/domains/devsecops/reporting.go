@@ -239,7 +239,7 @@ type CostOptReport struct {
 
 // CostRecommendation describes a single cost optimization opportunity.
 type CostRecommendation struct {
-	Category      string  // "compute", "storage", "transfer", "database", "unused"
+	Category      string // "compute", "storage", "transfer", "database", "unused"
 	Description   string
 	CurrentCost   float64
 	OptimizedCost float64

@@ -65,8 +65,8 @@ func buildInjectionPatterns() []ThreatPattern {
 		{
 			Name:        "exfiltration_url",
 			Description: "URLs present in injected content that may facilitate data exfiltration",
-			Pattern:  regexp.MustCompile(`https?://[^\s"'<>]{4,}`),
-			Severity: "medium",
+			Pattern:     regexp.MustCompile(`https?://[^\s"'<>]{4,}`),
+			Severity:    "medium",
 		},
 		{
 			Name:        "encoding_evasion",
@@ -85,8 +85,8 @@ func buildInjectionPatterns() []ThreatPattern {
 		{
 			Name:        "tool_injection",
 			Description: "Fake tool invocation syntax injected into content",
-			Pattern:  regexp.MustCompile(`(?i)\b(tool_call|function_call|tool_use)\b`),
-			Severity: "high",
+			Pattern:     regexp.MustCompile(`(?i)\b(tool_call|function_call|tool_use)\b`),
+			Severity:    "high",
 		},
 		{
 			Name:        "data_exfiltration",

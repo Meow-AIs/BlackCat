@@ -19,10 +19,10 @@ import (
 //     constant-time, and available in Go's extended crypto library
 const (
 	// Argon2id parameters — OWASP recommended minimum for interactive use.
-	argon2Time    = 3           // iterations
-	argon2Memory  = 64 * 1024  // 64 MB
+	argon2Time    = 3         // iterations
+	argon2Memory  = 64 * 1024 // 64 MB
 	argon2Threads = 4
-	argon2KeyLen  = 32         // 256-bit key for XChaCha20-Poly1305
+	argon2KeyLen  = 32 // 256-bit key for XChaCha20-Poly1305
 
 	// Salt length for Argon2id.
 	saltLen = 16
@@ -32,7 +32,7 @@ const (
 )
 
 var (
-	ErrDecryptionFailed = errors.New("decryption failed: wrong password or corrupted data")
+	ErrDecryptionFailed  = errors.New("decryption failed: wrong password or corrupted data")
 	ErrInvalidCiphertext = errors.New("ciphertext too short")
 )
 

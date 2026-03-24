@@ -28,7 +28,7 @@ type SLARequirements struct {
 type InfraRecommendation struct {
 	Tier             SLATier
 	MinInstances     int
-	MinAZs           int  // availability zones
+	MinAZs           int // availability zones
 	NeedsMultiRegion bool
 	DatabaseHA       string // "single", "read-replica", "multi-az", "multi-region"
 	LoadBalancer     string // "alb", "nlb", "global"

@@ -41,10 +41,10 @@ func mockProviderPlugin(input io.Reader, output io.Writer) {
 		case "models":
 			resp.Result = []any{
 				map[string]any{
-					"id":                "plugin-model",
-					"name":              "Plugin Model",
-					"max_tokens":        float64(4096),
-					"input_cost_per_1m": float64(1.0),
+					"id":                 "plugin-model",
+					"name":               "Plugin Model",
+					"max_tokens":         float64(4096),
+					"input_cost_per_1m":  float64(1.0),
 					"output_cost_per_1m": float64(2.0),
 				},
 			}

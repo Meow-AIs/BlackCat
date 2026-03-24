@@ -19,12 +19,12 @@ func AllDomains() []Domain {
 
 // DomainConfig holds the configuration for a domain specialization.
 type DomainConfig struct {
-	Name             Domain   `json:"name" yaml:"name"`
-	Description      string   `json:"description" yaml:"description"`
-	SystemPrompt     string   `json:"system_prompt" yaml:"system_prompt"`
-	Tools            []string `json:"tools" yaml:"tools"`               // tool names to register
-	RequiredSkills   []string `json:"required_skills" yaml:"required_skills"`
-	DetectionFiles   []string `json:"detection_files" yaml:"detection_files"`     // file patterns for auto-detection
+	Name              Domain   `json:"name" yaml:"name"`
+	Description       string   `json:"description" yaml:"description"`
+	SystemPrompt      string   `json:"system_prompt" yaml:"system_prompt"`
+	Tools             []string `json:"tools" yaml:"tools"` // tool names to register
+	RequiredSkills    []string `json:"required_skills" yaml:"required_skills"`
+	DetectionFiles    []string `json:"detection_files" yaml:"detection_files"`       // file patterns for auto-detection
 	DetectionKeywords []string `json:"detection_keywords" yaml:"detection_keywords"` // keywords in project files
 }
 

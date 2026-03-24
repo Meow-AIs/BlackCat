@@ -6,11 +6,11 @@ import (
 
 // PlannedStep represents a single step in a tool execution plan.
 type PlannedStep struct {
-	Tool            string            // tool to invoke
-	Args            map[string]any    // arguments to pass
-	ExpectedOutcome string            // what we expect from this step
-	Alternatives    []PlannedStep     // backup options if this step fails
-	Confidence      float64           // 0-1 how confident this is correct
+	Tool            string         // tool to invoke
+	Args            map[string]any // arguments to pass
+	ExpectedOutcome string         // what we expect from this step
+	Alternatives    []PlannedStep  // backup options if this step fails
+	Confidence      float64        // 0-1 how confident this is correct
 }
 
 // ToolPlan holds a sequence of planned tool invocations.

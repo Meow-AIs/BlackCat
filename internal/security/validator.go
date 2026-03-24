@@ -9,13 +9,13 @@ import (
 
 // defaultDenyPatterns are regex patterns for commands that should never run.
 var defaultDenyPatterns = []string{
-	`(?i)\brm\s+(-[a-z]*f[a-z]*\s+)?-[a-z]*r[a-z]*\s+/`,  // rm -rf /
-	`(?i)\brm\s+(-[a-z]*r[a-z]*\s+)?-[a-z]*f[a-z]*\s+/`,  // rm -fr /
-	`(?i)\bmkfs\b`,                                          // mkfs (any variant)
-	`(?i)\bdd\s+if=`,                                        // dd if=
-	`(?i)\bformat\b`,                                        // format
-	`(?i)\bshutdown\b`,                                      // shutdown
-	`(?i)\breboot\b`,                                        // reboot
+	`(?i)\brm\s+(-[a-z]*f[a-z]*\s+)?-[a-z]*r[a-z]*\s+/`, // rm -rf /
+	`(?i)\brm\s+(-[a-z]*r[a-z]*\s+)?-[a-z]*f[a-z]*\s+/`, // rm -fr /
+	`(?i)\bmkfs\b`,     // mkfs (any variant)
+	`(?i)\bdd\s+if=`,   // dd if=
+	`(?i)\bformat\b`,   // format
+	`(?i)\bshutdown\b`, // shutdown
+	`(?i)\breboot\b`,   // reboot
 }
 
 // pathTraversalPattern detects suspicious path traversal sequences.
@@ -23,10 +23,10 @@ var pathTraversalPattern = regexp.MustCompile(`\.\./\.\./`)
 
 // CommandValidator validates shell commands before execution.
 type CommandValidator struct {
-	DenyPatterns  []string
-	AllowPaths    []string
-	MaxArgLength  int
-	compiledDeny  []*regexp.Regexp
+	DenyPatterns []string
+	AllowPaths   []string
+	MaxArgLength int
+	compiledDeny []*regexp.Regexp
 }
 
 // NewCommandValidator creates a validator with default deny patterns.

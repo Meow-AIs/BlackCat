@@ -203,15 +203,15 @@ func SuggestNonInteractive(command string) string {
 
 // promptPatterns are regex patterns that detect interactive prompts in output.
 var promptPatterns = []*regexp.Regexp{
-	regexp.MustCompile(`>>>\s*$`),                           // Python REPL
-	regexp.MustCompile(`mysql>\s*$`),                         // MySQL
-	regexp.MustCompile(`postgres=>\s*$`),                     // PostgreSQL
-	regexp.MustCompile(`(?:^|\n)[#$]\s+$`),                   // Shell prompt
-	regexp.MustCompile(`(?:^|\n)>\s+$`),                      // Node.js / generic
-	regexp.MustCompile(`irb\([^)]*\):\d+:\d+>\s*$`),         // Ruby IRB
-	regexp.MustCompile(`(?i)(?:enter\s+)?password\s*:`),      // Password prompt
-	regexp.MustCompile(`\[(?:[Yy]/[Nn]|[Yy]\/[Nn])\]`),     // Y/n confirmation
-	regexp.MustCompile(`(?i)press\s+(?:any\s+key|enter)`),   // Press any key
+	regexp.MustCompile(`>>>\s*$`),                         // Python REPL
+	regexp.MustCompile(`mysql>\s*$`),                      // MySQL
+	regexp.MustCompile(`postgres=>\s*$`),                  // PostgreSQL
+	regexp.MustCompile(`(?:^|\n)[#$]\s+$`),                // Shell prompt
+	regexp.MustCompile(`(?:^|\n)>\s+$`),                   // Node.js / generic
+	regexp.MustCompile(`irb\([^)]*\):\d+:\d+>\s*$`),       // Ruby IRB
+	regexp.MustCompile(`(?i)(?:enter\s+)?password\s*:`),   // Password prompt
+	regexp.MustCompile(`\[(?:[Yy]/[Nn]|[Yy]\/[Nn])\]`),    // Y/n confirmation
+	regexp.MustCompile(`(?i)press\s+(?:any\s+key|enter)`), // Press any key
 }
 
 // DetectPromptPattern checks if the output contains patterns indicating

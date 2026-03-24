@@ -159,8 +159,8 @@ func TestAnnotateResponseUnverified(t *testing.T) {
 	v := NewGroundingVerifier("/tmp")
 	response := "The error is stack overflow"
 	result := GroundingResult{
-		TotalClaims:  1,
-		FalseClaims:  1,
+		TotalClaims: 1,
+		FalseClaims: 1,
 		Claims: []GroundingClaim{
 			{Type: ClaimErrorMessage, Value: "stack overflow", Verified: false, Evidence: "not found"},
 		},

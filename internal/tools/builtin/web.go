@@ -12,8 +12,8 @@ import (
 )
 
 const (
-	defaultTimeout    = 30 * time.Second
-	maxResponseBytes  = 1024 * 1024 // 1MB
+	defaultTimeout   = 30 * time.Second
+	maxResponseBytes = 1024 * 1024 // 1MB
 )
 
 // --- WebFetchTool ---

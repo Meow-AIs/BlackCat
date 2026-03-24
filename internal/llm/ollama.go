@@ -29,17 +29,17 @@ func (p *OllamaProvider) Name() string { return "ollama" }
 
 // ollamaChatRequest is the request body for POST /api/chat.
 type ollamaChatRequest struct {
-	Model    string            `json:"model"`
-	Messages []ollamaMessage   `json:"messages"`
-	Stream   bool              `json:"stream"`
-	Tools    []ollamaTool      `json:"tools,omitempty"`
-	Options  map[string]any    `json:"options,omitempty"`
+	Model    string          `json:"model"`
+	Messages []ollamaMessage `json:"messages"`
+	Stream   bool            `json:"stream"`
+	Tools    []ollamaTool    `json:"tools,omitempty"`
+	Options  map[string]any  `json:"options,omitempty"`
 }
 
 type ollamaMessage struct {
-	Role      string            `json:"role"`
-	Content   string            `json:"content"`
-	ToolCalls []ollamaToolCall  `json:"tool_calls,omitempty"`
+	Role      string           `json:"role"`
+	Content   string           `json:"content"`
+	ToolCalls []ollamaToolCall `json:"tool_calls,omitempty"`
 }
 
 type ollamaTool struct {

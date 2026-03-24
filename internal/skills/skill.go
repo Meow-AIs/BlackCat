@@ -7,7 +7,7 @@ type Skill struct {
 	ID          string   `json:"id"`
 	Name        string   `json:"name"`
 	Description string   `json:"description"`
-	Trigger     string   `json:"trigger"`      // glob pattern for matching tasks
+	Trigger     string   `json:"trigger"` // glob pattern for matching tasks
 	Steps       []string `json:"steps"`
 	SuccessRate float64  `json:"success_rate"`
 	UsageCount  int      `json:"usage_count"`

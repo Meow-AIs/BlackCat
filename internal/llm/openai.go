@@ -49,20 +49,20 @@ func (p *OpenAIProvider) Models() []ModelInfo {
 
 // openaiRequest is the request body for the chat completions endpoint.
 type openaiRequest struct {
-	Model       string             `json:"model"`
-	Messages    []openaiMessage    `json:"messages"`
-	Tools       []openaiTool       `json:"tools,omitempty"`
-	MaxTokens   int                `json:"max_tokens,omitempty"`
-	Temperature *float64           `json:"temperature,omitempty"`
-	Stop        []string           `json:"stop,omitempty"`
-	Stream      bool               `json:"stream"`
+	Model       string          `json:"model"`
+	Messages    []openaiMessage `json:"messages"`
+	Tools       []openaiTool    `json:"tools,omitempty"`
+	MaxTokens   int             `json:"max_tokens,omitempty"`
+	Temperature *float64        `json:"temperature,omitempty"`
+	Stop        []string        `json:"stop,omitempty"`
+	Stream      bool            `json:"stream"`
 }
 
 type openaiMessage struct {
-	Role       string            `json:"role"`
-	Content    string            `json:"content"`
-	ToolCalls  []openaiToolCall  `json:"tool_calls,omitempty"`
-	ToolCallID string            `json:"tool_call_id,omitempty"`
+	Role       string           `json:"role"`
+	Content    string           `json:"content"`
+	ToolCalls  []openaiToolCall `json:"tool_calls,omitempty"`
+	ToolCallID string           `json:"tool_call_id,omitempty"`
 }
 
 type openaiTool struct {

@@ -88,9 +88,9 @@ type AuditLog interface {
 
 // AuditFilter controls which audit entries are returned.
 type AuditFilter struct {
-	SecretName string     // filter by secret name (empty = all)
-	Action     string     // filter by action (empty = all)
-	Actor      string     // filter by actor (empty = all)
-	Since      int64      // unix timestamp, 0 = no lower bound
-	Limit      int        // max entries to return, 0 = default (100)
+	SecretName string // filter by secret name (empty = all)
+	Action     string // filter by action (empty = all)
+	Actor      string // filter by actor (empty = all)
+	Since      int64  // unix timestamp, 0 = no lower bound
+	Limit      int    // max entries to return, 0 = default (100)
 }

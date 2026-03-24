@@ -24,7 +24,7 @@ func newMemBackend() *memBackend {
 	return &memBackend{data: make(map[string][]byte)}
 }
 
-func (m *memBackend) Name() string  { return "mem" }
+func (m *memBackend) Name() string    { return "mem" }
 func (m *memBackend) Available() bool { return true }
 
 func (m *memBackend) Get(_ context.Context, key string) ([]byte, error) {

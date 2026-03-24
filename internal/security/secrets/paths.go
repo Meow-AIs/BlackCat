@@ -35,11 +35,11 @@ var sensitiveSuffixes = []string{
 
 // sensitiveExtensions are file extensions that indicate cryptographic material.
 var sensitiveExtensions = map[string]bool{
-	".pem": true,
-	".key": true,
-	".p12": true,
-	".pfx": true,
-	".jks": true,
+	".pem":    true,
+	".key":    true,
+	".p12":    true,
+	".pfx":    true,
+	".jks":    true,
 	".pkcs12": true,
 }
 

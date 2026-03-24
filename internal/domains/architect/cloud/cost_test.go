@@ -7,13 +7,13 @@ import (
 
 func TestEstimateCloudCostBasic(t *testing.T) {
 	input := CostEstimateInput{
-		Provider:     AWS,
-		ComputeUnits: 2,
-		ComputeType:  "medium",
-		StorageGB:    100,
+		Provider:      AWS,
+		ComputeUnits:  2,
+		ComputeType:   "medium",
+		StorageGB:     100,
 		TransferOutGB: 50,
-		DatabaseType: "rds-small",
-		Region:       "us-east-1",
+		DatabaseType:  "rds-small",
+		Region:        "us-east-1",
 	}
 
 	est := EstimateCloudCost(input)
@@ -49,12 +49,12 @@ func TestEstimateCloudCostBasic(t *testing.T) {
 
 func TestEstimateCloudCostReserved(t *testing.T) {
 	onDemand := CostEstimateInput{
-		Provider:     AWS,
-		ComputeUnits: 4,
-		ComputeType:  "large",
-		StorageGB:    500,
+		Provider:      AWS,
+		ComputeUnits:  4,
+		ComputeType:   "large",
+		StorageGB:     500,
 		TransferOutGB: 100,
-		ReservedTerm: 0,
+		ReservedTerm:  0,
 	}
 	reserved1yr := onDemand
 	reserved1yr.ReservedTerm = 1
@@ -99,10 +99,10 @@ func TestEstimateCloudCostAllProviders(t *testing.T) {
 	providers := []CloudProvider{AWS, GCP, Azure, Alibaba}
 	for _, p := range providers {
 		est := EstimateCloudCost(CostEstimateInput{
-			Provider:     p,
-			ComputeUnits: 2,
-			ComputeType:  "medium",
-			StorageGB:    100,
+			Provider:      p,
+			ComputeUnits:  2,
+			ComputeType:   "medium",
+			StorageGB:     100,
 			TransferOutGB: 50,
 		})
 		if est.Provider != p {
