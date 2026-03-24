@@ -13,17 +13,8 @@ import (
 // not perform real WhatsApp communication. The connectBaileys method blocks
 // until context cancellation without establishing a connection.
 //
-// TODO: Replace with go.mau.fi/whatsmeow for production use.
-// whatsmeow is a pure Go implementation of the WhatsApp Web multi-device
-// protocol -- no Node.js, no Baileys subprocess, no external runtime.
-// See docs/native-channels-guide.md#whatsapp-whatsmeow for the full
-// migration pattern including:
-//   - QR code pairing flow via client.GetQRChannel
-//   - Session persistence in SQLite via sqlstore
-//   - Event-driven message handling via client.AddEventHandler
-//   - Automatic reconnection on disconnect
-//   - Handling session expiry (events.LoggedOut)
-//   - Advantages over Baileys bridge (no Node.js, lower memory, in-process)
+// For production use, migrate to go.mau.fi/whatsmeow (pure Go, no Node.js).
+// See docs/native-channels-guide.md#whatsapp-whatsmeow.
 type Bot struct {
 	sessionPath    string
 	allowedNumbers map[string]bool
@@ -67,21 +58,7 @@ func (b *Bot) Platform() channels.Platform { return channels.PlatformWhatsApp }
 
 // Start connects to WhatsApp and begins listening for messages.
 //
-// TODO(native): Replace with whatsmeow client setup:
-//
-//	container, _ := sqlstore.New("sqlite3", dbURI, waLog.Noop)
-//	deviceStore, _ := container.GetFirstDevice()
-//	b.client = whatsmeow.NewClient(deviceStore, waLog.Noop)
-//	b.client.AddEventHandler(b.eventHandler)
-//	if b.client.Store.ID == nil {
-//	    // No session: start QR pairing flow
-//	    qrChan, _ := b.client.GetQRChannel(ctx)
-//	    b.client.Connect()
-//	    // Display QR codes from qrChan
-//	} else {
-//	    b.client.Connect() // Reconnect with stored session
-//	}
-//
+// Native upgrade: use whatsmeow client with QR pairing.
 // See docs/native-channels-guide.md#qr-code-pairing-flow.
 func (b *Bot) Start(ctx context.Context) error {
 	ctx, b.cancel = context.WithCancel(ctx)
@@ -91,8 +68,7 @@ func (b *Bot) Start(ctx context.Context) error {
 
 // Stop gracefully disconnects from WhatsApp and closes the incoming channel.
 //
-// TODO(native): Also call b.client.Disconnect() to cleanly close the
-// WhatsApp Web connection.
+// Native upgrade: also call b.client.Disconnect() for clean shutdown.
 func (b *Bot) Stop(_ context.Context) error {
 	if b.cancel != nil {
 		b.cancel()
@@ -106,14 +82,7 @@ func (b *Bot) Receive() <-chan channels.IncomingMessage { return b.incoming }
 
 // Send delivers a message to a WhatsApp chat.
 //
-// TODO(native): Replace with whatsmeow's SendMessage:
-//
-//	jid, _ := types.ParseJID(msg.ChannelID)
-//	b.client.SendMessage(ctx, jid, &waProto.Message{
-//	    Conversation: &msg.Text,
-//	})
-//
-// For formatted messages, use ExtendedTextMessage instead of Conversation.
+// Native upgrade: use whatsmeow SendMessage.
 // See docs/native-channels-guide.md#sending-messages-2.
 func (b *Bot) Send(_ context.Context, msg channels.OutgoingMessage) error {
 	// Stub: log the intent but do not actually send via WhatsApp.
@@ -124,22 +93,12 @@ func (b *Bot) Send(_ context.Context, msg channels.OutgoingMessage) error {
 
 // IsPaired returns whether the WhatsApp session has been paired via QR code.
 //
-// TODO(native): Check b.client.Store.ID != nil to determine pairing status.
+// Native upgrade: check b.client.Store.ID != nil for pairing status.
 func (b *Bot) IsPaired() bool { return b.paired }
 
 // connectBaileys is a placeholder for the WhatsApp connection.
 //
-// TODO(native): Replace entirely with whatsmeow's event-driven architecture.
-// The native flow is:
-//  1. Initialize sqlstore for session persistence
-//  2. Create whatsmeow.Client with device store
-//  3. Register event handler for *events.Message, *events.LoggedOut,
-//     *events.Disconnected
-//  4. If no stored session, start QR pairing via client.GetQRChannel
-//  5. If stored session exists, call client.Connect() to reconnect
-//  6. In the event handler, filter by allowedNumbers and convert to
-//     channels.IncomingMessage
-//
+// Native upgrade: replace with whatsmeow event-driven architecture.
 // See docs/native-channels-guide.md#whatsapp-whatsmeow.
 func (b *Bot) connectBaileys(ctx context.Context) {
 	<-ctx.Done()

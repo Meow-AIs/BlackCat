@@ -18,14 +18,8 @@ import (
 // This works for low-traffic bots but lacks features like media handling,
 // inline keyboards, and webhook support.
 //
-// TODO: Replace with github.com/go-telegram/bot for production use.
-// See docs/native-channels-guide.md#telegram-go-telegrambot for the full
-// migration pattern including:
-//   - Managed long-polling via bot.Start (no manual pollLoop)
-//   - Webhook mode via bot.StartWebhook for high-traffic bots
-//   - Media sending (photos, documents, voice) via bot.SendPhoto etc.
-//   - MarkdownV2 formatting with proper character escaping
-//   - ReplyParameters for threaded replies
+// For enhanced features (webhooks, media, MarkdownV2), migrate to
+// github.com/go-telegram/bot. See docs/native-channels-guide.md.
 type Bot struct {
 	token        string
 	allowedUsers map[int64]bool
@@ -73,11 +67,7 @@ func (b *Bot) Platform() channels.Platform { return channels.PlatformTelegram }
 
 // Start connects to Telegram and begins long-polling for updates.
 //
-// TODO(native): Replace with go-telegram/bot managed polling:
-//
-//	client, _ := bot.New(b.token, bot.WithDefaultHandler(b.onUpdate))
-//	go client.Start(ctx)
-//
+// Native upgrade: use go-telegram/bot managed polling.
 // See docs/native-channels-guide.md#starting-the-long-poll-loop.
 func (b *Bot) Start(ctx context.Context) error {
 	ctx, b.cancel = context.WithCancel(ctx)
@@ -99,12 +89,7 @@ func (b *Bot) Receive() <-chan channels.IncomingMessage { return b.incoming }
 
 // Send delivers a message to a Telegram chat.
 //
-// TODO(native): Replace with go-telegram/bot's SendMessage which supports:
-//   - MarkdownV2 parse mode with proper escaping
-//   - ReplyParameters for threaded replies
-//   - InlineKeyboardMarkup for interactive buttons
-//   - SendPhoto, SendDocument, SendVoice for media
-//
+// Native upgrade: use go-telegram/bot SendMessage for MarkdownV2, media, buttons.
 // See docs/native-channels-guide.md#sending-messages.
 func (b *Bot) Send(ctx context.Context, msg channels.OutgoingMessage) error {
 	parseMode := "Markdown"
@@ -130,12 +115,8 @@ func (b *Bot) Send(ctx context.Context, msg channels.OutgoingMessage) error {
 // long-polling. Each update is converted to an IncomingMessage and sent
 // to the incoming channel.
 //
-// TODO(native): This entire method is replaced by go-telegram/bot's internal
-// polling. Register a default handler instead:
-//
-//	bot.WithDefaultHandler(func(ctx context.Context, b *bot.Bot, update *models.Update) {
-//	    // convert update to IncomingMessage
-//	})
+// Native upgrade: this method is replaced by go-telegram/bot's internal polling.
+// Register a default handler instead.
 func (b *Bot) pollLoop(ctx context.Context) {
 	offset := 0
 	for {

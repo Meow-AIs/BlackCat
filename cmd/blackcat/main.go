@@ -1,9 +1,11 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -81,8 +83,71 @@ func run(args []string) int {
 }
 
 func runInteractive() {
-	fmt.Printf("BlackCat v%s by MeowAI\n", version)
-	fmt.Println("Interactive TUI not yet implemented. Use 'blackcat help' for available commands.")
+	core, err := initAgent()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error: failed to initialise agent: %v\n", err)
+		core = nil
+	}
+	runREPL(os.Stdin, os.Stdout, core)
+}
+
+// runREPL runs a simple read-eval-print loop, reading from in and writing to out.
+// If core is nil, input lines that are not exit commands produce an error message.
+func runREPL(in io.Reader, out io.Writer, core *agent.Core) {
+	fmt.Fprintf(out, "BlackCat v%s by MeowAI\n", version)
+	fmt.Fprintln(out, "Type 'exit' or 'quit' to leave. Enter a prompt to chat.")
+	fmt.Fprintln(out)
+
+	var sess *agent.Session
+	ctx := context.Background()
+
+	if core != nil {
+		s, err := core.StartSession(ctx, "cli", "user")
+		if err != nil {
+			fmt.Fprintf(out, "warning: could not start session: %v\n", err)
+		} else {
+			sess = &s
+		}
+	}
+
+	scanner := bufio.NewScanner(in)
+	for {
+		fmt.Fprint(out, "> ")
+
+		if !scanner.Scan() {
+			// EOF or read error — exit cleanly.
+			fmt.Fprintln(out)
+			break
+		}
+
+		line := strings.TrimSpace(scanner.Text())
+		if line == "" {
+			continue
+		}
+
+		switch line {
+		case "exit", "quit", "/exit", "/quit":
+			fmt.Fprintln(out, "Goodbye!")
+			return
+		}
+
+		if core == nil || sess == nil {
+			fmt.Fprintln(out, "error: agent not initialised. Use 'blackcat <prompt>' for one-shot mode.")
+			continue
+		}
+
+		resp, err := core.Process(ctx, sess.ID, line)
+		if err != nil {
+			fmt.Fprintf(out, "error: %v\n", err)
+			continue
+		}
+
+		fmt.Fprintln(out, resp.Text)
+
+		if summary := agentCostSummary(core); summary != "" {
+			fmt.Fprintln(out, summary)
+		}
+	}
 }
 
 func runOneShot(prompt string) {

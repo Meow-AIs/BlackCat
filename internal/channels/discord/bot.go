@@ -1,29 +1,29 @@
 package discord
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
+	"net/http"
 	"strings"
 
 	"github.com/meowai/blackcat/internal/channels"
 )
 
+const (
+	discordBaseURL  = "https://discord.com"
+	discordMaxChars = 2000
+)
+
 // Bot implements the channels.Adapter interface for Discord.
 //
-// Current implementation: stub that connects to the gateway conceptually but
-// does not perform real WebSocket communication. Send is a no-op.
-//
-// TODO: Replace with github.com/bwmarrin/discordgo for production use.
-// See docs/native-channels-guide.md#discord-discordgo for the full
-// migration pattern including:
-//   - WebSocket gateway connection via discordgo.Session.Open()
-//   - MessageCreate event handler for incoming messages
-//   - Slash command registration via ApplicationCommandCreate
-//   - Embed formatting for rich responses
-//   - 2000-character message splitting
-//   - Message Content Intent declaration
+// Send() uses the Discord REST API v10 to deliver messages.
+// Messages longer than 2000 characters are split at newline boundaries.
 type Bot struct {
 	token           string
+	baseURL         string
+	httpClient      *http.Client
 	allowedGuilds   map[string]bool
 	allowedChannels map[string]bool
 	incoming        chan channels.IncomingMessage
@@ -35,14 +35,11 @@ type Config struct {
 	Token           string
 	AllowedGuilds   []string
 	AllowedChannels []string
+	// BaseURL overrides the Discord API base URL. Used for testing with httptest.
+	BaseURL string
 }
 
 // New creates a Discord bot adapter.
-//
-// The returned Bot is a stub that satisfies the channels.Adapter interface
-// but does not perform real Discord API communication. For production
-// deployments, migrate to discordgo.
-// See docs/native-channels-guide.md#discord-discordgo.
 func New(cfg Config) *Bot {
 	guilds := make(map[string]bool, len(cfg.AllowedGuilds))
 	for _, g := range cfg.AllowedGuilds {
@@ -52,8 +49,14 @@ func New(cfg Config) *Bot {
 	for _, c := range cfg.AllowedChannels {
 		chans[c] = true
 	}
+	baseURL := cfg.BaseURL
+	if baseURL == "" {
+		baseURL = discordBaseURL
+	}
 	return &Bot{
 		token:           cfg.Token,
+		baseURL:         baseURL,
+		httpClient:      &http.Client{},
 		allowedGuilds:   guilds,
 		allowedChannels: chans,
 		incoming:        make(chan channels.IncomingMessage, 100),
@@ -64,16 +67,6 @@ func New(cfg Config) *Bot {
 func (b *Bot) Platform() channels.Platform { return channels.PlatformDiscord }
 
 // Start connects to Discord and begins listening for messages.
-//
-// TODO(native): Replace with discordgo session setup:
-//
-//	session, _ := discordgo.New("Bot " + b.token)
-//	session.Identify.Intents = discordgo.IntentsGuildMessages |
-//	    discordgo.IntentsDirectMessages | discordgo.IntentsMessageContent
-//	session.AddHandler(b.onMessageCreate)
-//	session.Open()
-//
-// See docs/native-channels-guide.md#connecting-the-gateway.
 func (b *Bot) Start(ctx context.Context) error {
 	ctx, b.cancel = context.WithCancel(ctx)
 	go b.connectGateway(ctx)
@@ -81,8 +74,6 @@ func (b *Bot) Start(ctx context.Context) error {
 }
 
 // Stop gracefully disconnects from Discord and closes the incoming channel.
-//
-// TODO(native): Also call session.Close() to cleanly disconnect the WebSocket.
 func (b *Bot) Stop(_ context.Context) error {
 	if b.cancel != nil {
 		b.cancel()
@@ -94,42 +85,56 @@ func (b *Bot) Stop(_ context.Context) error {
 // Receive returns the channel that emits incoming messages from Discord.
 func (b *Bot) Receive() <-chan channels.IncomingMessage { return b.incoming }
 
-// Send delivers a message to a Discord channel.
+// Send delivers a message to a Discord channel using the REST API v10.
 //
-// TODO(native): Replace with discordgo's ChannelMessageSendComplex which supports:
-//   - MessageReference for reply threading
-//   - Embed objects for rich formatting
-//   - 2000-character message splitting (see splitMessage helper in guide)
-//   - File attachments via MessageSend.Files
-//
-// See docs/native-channels-guide.md#sending-messages-with-2000-character-splitting.
-func (b *Bot) Send(_ context.Context, msg channels.OutgoingMessage) error {
-	// Stub: log the intent but do not actually call the Discord API.
-	// In production, this would POST to /channels/{id}/messages via discordgo.
-	_ = fmt.Sprintf("discord stub: would send to channel %s: %s",
-		msg.ChannelID, truncate(msg.Text, 50))
+// Messages longer than 2000 characters are split into multiple requests,
+// preferring to break at newline boundaries where possible.
+// Each part is sent as a POST to /api/v10/channels/{channel_id}/messages
+// with Authorization: Bot {token} and Content-Type: application/json.
+func (b *Bot) Send(ctx context.Context, msg channels.OutgoingMessage) error {
+	parts := splitMessage(msg.Text, discordMaxChars)
+	for _, part := range parts {
+		if err := b.sendPart(ctx, msg.ChannelID, part); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// sendPart POSTs a single message chunk to the Discord REST API.
+func (b *Bot) sendPart(ctx context.Context, channelID, text string) error {
+	url := fmt.Sprintf("%s/api/v10/channels/%s/messages", b.baseURL, channelID)
+
+	body, err := json.Marshal(map[string]string{"content": text})
+	if err != nil {
+		return fmt.Errorf("discord: marshal message: %w", err)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(body))
+	if err != nil {
+		return fmt.Errorf("discord: create request: %w", err)
+	}
+	req.Header.Set("Authorization", "Bot "+b.token)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := b.httpClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("discord: send request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return fmt.Errorf("discord: API error %d for channel %s", resp.StatusCode, channelID)
+	}
 	return nil
 }
 
 // connectGateway is a placeholder for the Discord WebSocket gateway connection.
-//
-// TODO(native): Replace entirely with discordgo's managed connection.
-// The native flow is:
-//  1. discordgo.New("Bot " + token) creates the session
-//  2. session.Open() connects via WSS to the Discord gateway
-//  3. session.AddHandler(onMessageCreate) receives MESSAGE_CREATE events
-//  4. session.AddHandler(onInteractionCreate) receives slash command interactions
-//  5. Filter events by guild/channel whitelist via IsAllowed
-//  6. Convert to channels.IncomingMessage and push to b.incoming
-//
-// See docs/native-channels-guide.md#handling-incoming-messages-1.
 func (b *Bot) connectGateway(ctx context.Context) {
 	<-ctx.Done()
 }
 
 // IsAllowed checks if a message from the given guild/channel should be processed.
-// This filter is applied inside the message handler before converting to
-// IncomingMessage.
 func (b *Bot) IsAllowed(guildID, channelID string) bool {
 	if len(b.allowedGuilds) > 0 && !b.allowedGuilds[guildID] {
 		return false
@@ -140,11 +145,7 @@ func (b *Bot) IsAllowed(guildID, channelID string) bool {
 	return true
 }
 
-// splitMessage breaks text into chunks respecting Discord's 2000-char limit,
-// preferring to split at newline boundaries.
-//
-// TODO(native): Use this helper inside Send when migrating to discordgo.
-// See docs/native-channels-guide.md#sending-messages-with-2000-character-splitting.
+// splitMessage breaks text into chunks respecting maxLen, preferring newline boundaries.
 func splitMessage(text string, maxLen int) []string {
 	if len(text) <= maxLen {
 		return []string{text}
