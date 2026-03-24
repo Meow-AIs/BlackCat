@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
@@ -96,6 +97,8 @@ func cmdLogin(args []string) int {
 			fmt.Fprintf(os.Stderr, "Authorization failed: %v\n", err)
 			return 1
 		}
+		// Save copilot token marker
+		saveOAuthToken("copilot", &llm.OAuthToken{AccessToken: "copilot-authenticated"})
 		fmt.Println("Logged in to GitHub Copilot. Token stored securely.")
 
 	case "codex":
@@ -159,20 +162,21 @@ func cmdLogin(args []string) int {
 			fmt.Fprintf(os.Stderr, "Token exchange failed: %v\n", err)
 			return 1
 		}
-		_ = token
+		// Persist token
+		if saveErr := saveOAuthToken("codex", token); saveErr != nil {
+			fmt.Fprintf(os.Stderr, "Warning: could not save token: %v\n", saveErr)
+		}
 		fmt.Println("Logged in to OpenAI Codex. Token stored securely.")
 
 	case "status":
 		fmt.Println("Login Status:")
-		copilot := llm.NewCopilotProvider()
-		codex := llm.NewCodexProvider()
-		if copilot.IsAuthenticated() {
+		if isOAuthAuthenticated("copilot") {
 			fmt.Println("  GitHub Copilot:  authenticated")
 		} else {
 			fmt.Println("  GitHub Copilot:  not authenticated (run: blackcat login copilot)")
 		}
-		if codex.IsAuthenticated() {
-			fmt.Println("  OpenAI Codex:    not authenticated (run: blackcat login codex)")
+		if isOAuthAuthenticated("codex") {
+			fmt.Println("  OpenAI Codex:    authenticated")
 		} else {
 			fmt.Println("  OpenAI Codex:    not authenticated (run: blackcat login codex)")
 		}
@@ -252,12 +256,21 @@ func cmdModels() int {
 	}
 
 	// OAuth providers
-	copilot := llm.NewCopilotProvider()
-	if copilot.IsAuthenticated() {
+	if isOAuthAuthenticated("copilot") {
 		hasAny = true
+		copilot := llm.NewCopilotProvider()
 		fmt.Println("  GitHub Copilot (authenticated via OAuth):")
 		for _, m := range copilot.Models() {
 			fmt.Printf("    copilot/%s\n", m.ID)
+		}
+		fmt.Println()
+	}
+	if isOAuthAuthenticated("codex") {
+		hasAny = true
+		codex := llm.NewCodexProvider()
+		fmt.Println("  OpenAI Codex (authenticated via PKCE OAuth):")
+		for _, m := range codex.Models() {
+			fmt.Printf("    codex/%s\n", m.ID)
 		}
 		fmt.Println()
 	}
@@ -276,9 +289,14 @@ func cmdModels() int {
 			unconfigured = append(unconfigured, p)
 		}
 	}
-	if !copilot.IsAuthenticated() {
+	if !isOAuthAuthenticated("copilot") {
 		unconfigured = append(unconfigured, providerCheck{
 			name: "GitHub Copilot", authCmd: "blackcat login copilot",
+		})
+	}
+	if !isOAuthAuthenticated("codex") {
+		unconfigured = append(unconfigured, providerCheck{
+			name: "OpenAI Codex", authCmd: "blackcat login codex",
 		})
 	}
 
@@ -616,6 +634,47 @@ func backupConfigFile(path string) error {
 		return err
 	}
 	return os.WriteFile(path+".bak", data, 0o600)
+}
+
+// saveOAuthToken saves an OAuth token to ~/.blackcat/tokens/<provider>.json
+func saveOAuthToken(provider string, token *llm.OAuthToken) error {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return err
+	}
+	dir := filepath.Join(home, ".blackcat", "tokens")
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		return err
+	}
+	data, err := json.Marshal(token)
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(filepath.Join(dir, provider+".json"), data, 0o600)
+}
+
+// loadOAuthToken loads a saved OAuth token for a provider
+func loadOAuthToken(provider string) (*llm.OAuthToken, error) {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return nil, err
+	}
+	path := filepath.Join(home, ".blackcat", "tokens", provider+".json")
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	var token llm.OAuthToken
+	if err := json.Unmarshal(data, &token); err != nil {
+		return nil, err
+	}
+	return &token, nil
+}
+
+// isOAuthAuthenticated checks if a provider has a saved token
+func isOAuthAuthenticated(provider string) bool {
+	token, err := loadOAuthToken(provider)
+	return err == nil && token != nil && token.AccessToken != ""
 }
 
 // openBrowserURL attempts to open a URL in the system's default browser.
