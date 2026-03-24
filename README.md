@@ -2,7 +2,7 @@
   <img src="docs/assets/logo.png" alt="BlackCat Logo" width="180" />
 </p>
 
-<h1 align="center">🐱 BlackCat</h1>
+<h1 align="center">🐈‍⬛ BlackCat</h1>
 
 <p align="center">
   <strong>Your DevSecOps engineer and Solution Architect — in a 15MB binary.</strong>

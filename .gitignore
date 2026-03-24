@@ -1,8 +1,7 @@
-# Binaries
-blackcat
-blackcat.exe
-blackcat-*
-*.exe
+# Binaries (root level only, not cmd/blackcat/)
+/blackcat
+/blackcat.exe
+/blackcat-*
 *.dll
 *.so
 *.dylib
