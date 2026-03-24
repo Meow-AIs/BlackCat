@@ -329,7 +329,7 @@ providers:
     model: claude-sonnet-4-6
     # api_key: (use /config set or ANTHROPIC_API_KEY env var)
   openai:
-    model: gpt-4.1
+    model: gpt-5.4
     # api_key: (use /config set or OPENAI_API_KEY env var)
   ollama:
     base_url: http://localhost:11434

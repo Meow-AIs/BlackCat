@@ -12,7 +12,7 @@ set -euo pipefail
 
 MODEL_DIR="embed/model"
 MODEL_FILE="$MODEL_DIR/minilm-l6-v2-int8.onnx"
-MODEL_URL="https://huggingface.co/optimum/all-MiniLM-L6-v2/resolve/main/model_quantized.onnx"
+MODEL_URL="https://huggingface.co/Xenova/all-MiniLM-L6-v2/resolve/main/onnx/model_quantized.onnx"
 
 if [ -f "$MODEL_FILE" ]; then
     echo "Model already exists: $MODEL_FILE ($(du -h "$MODEL_FILE" | cut -f1))"
