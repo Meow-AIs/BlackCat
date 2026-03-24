@@ -4,6 +4,10 @@
 package updater
 
 import (
+	"archive/tar"
+	"archive/zip"
+	"bytes"
+	"compress/gzip"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -146,9 +150,9 @@ func (u *Updater) CheckForUpdate() (UpdateInfo, error) {
 	return info, nil
 }
 
-// DownloadUpdate downloads the binary from the given URL.
-func (u *Updater) DownloadUpdate(url string) ([]byte, error) {
-	resp, err := u.httpClient.Get(url)
+// DownloadUpdate downloads the archive and extracts the binary.
+func (u *Updater) DownloadUpdate(downloadURL, assetName string) ([]byte, error) {
+	resp, err := u.httpClient.Get(downloadURL)
 	if err != nil {
 		return nil, fmt.Errorf("download: %w", err)
 	}
@@ -158,11 +162,71 @@ func (u *Updater) DownloadUpdate(url string) ([]byte, error) {
 		return nil, fmt.Errorf("download returned %d", resp.StatusCode)
 	}
 
-	data, err := io.ReadAll(resp.Body)
+	archiveData, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("read download: %w", err)
 	}
-	return data, nil
+
+	// Extract binary from archive
+	if strings.HasSuffix(assetName, ".tar.gz") {
+		return extractFromTarGz(archiveData)
+	} else if strings.HasSuffix(assetName, ".zip") {
+		return extractFromZip(archiveData)
+	}
+	// If not an archive, return as-is (raw binary)
+	return archiveData, nil
+}
+
+// extractFromTarGz extracts the first file from a .tar.gz archive.
+func extractFromTarGz(data []byte) ([]byte, error) {
+	gz, err := gzip.NewReader(bytes.NewReader(data))
+	if err != nil {
+		return nil, fmt.Errorf("open gzip: %w", err)
+	}
+	defer gz.Close()
+
+	tr := tar.NewReader(gz)
+	for {
+		hdr, err := tr.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return nil, fmt.Errorf("read tar: %w", err)
+		}
+		// Skip directories, find the binary (first regular file)
+		if hdr.Typeflag == tar.TypeReg && strings.HasPrefix(hdr.Name, "blackcat") {
+			binary, err := io.ReadAll(tr)
+			if err != nil {
+				return nil, fmt.Errorf("extract binary: %w", err)
+			}
+			return binary, nil
+		}
+	}
+	return nil, fmt.Errorf("no blackcat binary found in archive")
+}
+
+// extractFromZip extracts the first blackcat file from a .zip archive.
+func extractFromZip(data []byte) ([]byte, error) {
+	zr, err := zip.NewReader(bytes.NewReader(data), int64(len(data)))
+	if err != nil {
+		return nil, fmt.Errorf("open zip: %w", err)
+	}
+	for _, f := range zr.File {
+		if strings.HasPrefix(f.Name, "blackcat") {
+			rc, err := f.Open()
+			if err != nil {
+				return nil, fmt.Errorf("open zip entry: %w", err)
+			}
+			defer rc.Close()
+			binary, err := io.ReadAll(rc)
+			if err != nil {
+				return nil, fmt.Errorf("extract binary: %w", err)
+			}
+			return binary, nil
+		}
+	}
+	return nil, fmt.Errorf("no blackcat binary found in zip")
 }
 
 // ReplaceBinary replaces the current executable with new data.

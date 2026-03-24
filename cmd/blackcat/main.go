@@ -175,7 +175,7 @@ func cmdUpdate() int {
 		return 0
 	}
 	fmt.Printf("Downloading %s...\n", info.AssetName)
-	data, err := u.DownloadUpdate(info.DownloadURL)
+	data, err := u.DownloadUpdate(info.DownloadURL, info.AssetName)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error downloading: %v\n", err)
 		return 1
