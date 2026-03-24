@@ -46,6 +46,23 @@ func MergeProjectConfig(global Config, projectPath string) (Config, error) {
 	return merged, nil
 }
 
+// BackupConfig creates a .bak copy of the config file before modifying it.
+// If the config file doesn't exist, this is a no-op.
+func BackupConfig(configPath string) error {
+	data, err := os.ReadFile(configPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return fmt.Errorf("read config for backup: %w", err)
+	}
+	backupPath := configPath + ".bak"
+	if err := os.WriteFile(backupPath, data, 0600); err != nil {
+		return fmt.Errorf("write backup: %w", err)
+	}
+	return nil
+}
+
 // expandEnvVars replaces $VAR_NAME and ${VAR_NAME} with environment variable values.
 func expandEnvVars(s string) string {
 	return os.Expand(s, func(key string) string {

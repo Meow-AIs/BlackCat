@@ -43,3 +43,12 @@ CLAUDE.md
 PLANNING.md
 IMPROVEMENT-PLAN.md
 PRD.md
+
+# ONNX model (downloaded at build time, not committed)
+embed/model/*.onnx
+
+# SSH keys / credentials
+digital-ocean
+*.pem
+id_rsa
+id_ed25519

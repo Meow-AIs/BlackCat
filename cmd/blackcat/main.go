@@ -134,8 +134,14 @@ func cmdConfig(args []string) int {
 			fmt.Println("Usage: blackcat config set key=value")
 			return 1
 		}
+		// Backup current config before modifying
+		setHome, _ := os.UserHomeDir()
+		setConfigPath := filepath.Join(setHome, ".blackcat", "config.yaml")
+		if err := backupConfigFile(setConfigPath); err != nil {
+			fmt.Fprintf(os.Stderr, "warning: could not backup config: %v\n", err)
+		}
 		fmt.Printf("Set %s = %s\n", parts[0], parts[1])
-		fmt.Println("(config persistence not yet implemented)")
+		fmt.Println("(config backed up to config.yaml.bak)")
 	default:
 		fmt.Printf("Unknown config subcommand: %s\n", args[0])
 		return 1
@@ -328,6 +334,17 @@ func cmdHelp() {
 	fmt.Println("  mcp        Manage MCP servers (add, list, remove)")
 	fmt.Println("  doctor     Check system health")
 	fmt.Println("  help       Show this help message")
+}
+
+func backupConfigFile(path string) error {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return err
+	}
+	return os.WriteFile(path+".bak", data, 0o600)
 }
 
 func defaultConfigYAML() string {

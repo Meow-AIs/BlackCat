@@ -68,9 +68,11 @@ var KnownModelMetadata = map[string]ModelMetadata{
 	"llama-3.1-8b-instant":           {MaxTokens: 131072, InputCost: 0.05, OutputCost: 0.08},
 	"deepseek-r1-distill-llama-70b":  {MaxTokens: 131072, InputCost: 0.75, OutputCost: 0.99},
 
-	// Google Gemini (via OpenRouter)
-	"gemini-2.5-pro":   {MaxTokens: 1000000, InputCost: 1.25, OutputCost: 10.0},
-	"gemini-2.5-flash": {MaxTokens: 1000000, InputCost: 0.15, OutputCost: 0.60},
+	// Google Gemini (March 2026)
+	"gemini-2.5-pro":       {MaxTokens: 1000000, InputCost: 1.25, OutputCost: 10.0},
+	"gemini-2.5-flash":     {MaxTokens: 1000000, InputCost: 0.15, OutputCost: 0.60},
+	"gemini-2.0-flash":     {MaxTokens: 1000000, InputCost: 0.10, OutputCost: 0.40},
+	"gemini-2.0-flash-lite": {MaxTokens: 1000000, InputCost: 0.0, OutputCost: 0.0},
 
 	// Meta Llama (via OpenRouter)
 	"meta-llama/llama-4-maverick": {MaxTokens: 1000000, InputCost: 0.2, OutputCost: 0.6},
