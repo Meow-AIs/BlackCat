@@ -293,6 +293,75 @@ Models: `grok-4-1-fast-latest` (flagship), `grok-4-heavy` (deep reasoning), `gro
 export XAI_API_KEY="xai-..."
 ```
 
+## OAuth Providers (No API Key Needed)
+
+These providers use OAuth device flow — you authenticate with your existing subscription (GitHub Copilot or ChatGPT). No API key purchase required.
+
+### GitHub Copilot
+
+**Free** with any GitHub Copilot subscription (Individual, Business, or Enterprise).
+
+**Login:**
+```bash
+blackcat login copilot
+# → "Go to https://github.com/login/device and enter code: ABCD-1234"
+# → (open browser, enter code, authorize)
+# → "Logged in to GitHub Copilot. Token stored securely."
+```
+
+**Available models** (via Copilot):
+- `gpt-5.4` (OpenAI flagship)
+- `gpt-4.1` (1M context, coding)
+- `claude-sonnet-4-6` (Anthropic via Copilot)
+- `claude-opus-4-6` (Anthropic via Copilot)
+- `o4-mini` (reasoning)
+
+**Config:**
+```yaml
+provider: copilot
+model: "copilot/gpt-5.4"
+```
+
+### OpenAI Codex
+
+**Free** with ChatGPT Plus/Pro/Team subscription.
+
+**Login:**
+```bash
+blackcat login codex
+# → "Go to https://auth.openai.com/device and enter code: WXYZ-5678"
+# → (open browser, enter code, authorize)
+# → "Logged in to OpenAI Codex. Token stored securely."
+```
+
+**Available models:**
+- `gpt-5.4`
+- `gpt-4.1`
+- `o4-mini`
+
+**Config:**
+```yaml
+provider: codex
+model: "codex/gpt-5.4"
+```
+
+### Check Login Status
+
+```bash
+blackcat login status
+# → GitHub Copilot:  authenticated ✓
+# → OpenAI Codex:    not authenticated (run: blackcat login codex)
+```
+
+### Logout
+
+```bash
+blackcat logout copilot
+blackcat logout codex
+```
+
+> **Note**: OAuth tokens are stored in the encrypted secret store (OS Keychain or XChaCha20 file). They are never written to config.yaml.
+
 ## Model Router Configuration
 
 The model router maps task types to three tiers of providers:
