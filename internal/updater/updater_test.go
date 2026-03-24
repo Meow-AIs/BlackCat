@@ -9,7 +9,7 @@ import (
 
 func TestParseVersion(t *testing.T) {
 	tests := []struct {
-		input    string
+		input               string
 		major, minor, patch int
 	}{
 		{"0.1.0", 0, 1, 0},
