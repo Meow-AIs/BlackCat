@@ -18,6 +18,7 @@ type OAuthConfig struct {
 	DeviceCodeURL string // POST to get device code
 	TokenURL      string // POST to poll for token
 	Scopes        []string
+	Audience      string // required by some providers (e.g. OpenAI)
 }
 
 // DeviceCodeResponse is returned when initiating the device flow.
@@ -63,10 +64,11 @@ var GitHubCopilotOAuth = OAuthConfig{
 
 // OpenAICodexOAuth is the predefined OAuth config for OpenAI Codex.
 var OpenAICodexOAuth = OAuthConfig{
-	ClientID:      "DJRAfKZp-lDSag9u90G5YL2jkfOJHGHmzuMN8WNtHms",
+	ClientID:      "app_EMoamEEZ73f0CkXaXp7hrann",
 	DeviceCodeURL: "https://auth.openai.com/oauth/device/code",
 	TokenURL:      "https://auth.openai.com/oauth/token",
 	Scopes:        []string{"openai.chat.completions"},
+	Audience:      "https://api.openai.com/v1",
 }
 
 // NewOAuthClient creates a new OAuth client with the given configuration.
@@ -77,11 +79,23 @@ func NewOAuthClient(config OAuthConfig) *OAuthClient {
 	}
 }
 
+// setOAuthHeaders sets standard headers for OAuth requests to avoid Cloudflare blocks.
+func setOAuthHeaders(req *http.Request) {
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("User-Agent", "BlackCat/1.0")
+	req.Header.Set("Accept-Language", "en-US,en;q=0.9")
+	req.Header.Set("Accept-Encoding", "gzip, deflate, br")
+}
+
 // RequestDeviceCode initiates the device flow by requesting a device code.
 func (c *OAuthClient) RequestDeviceCode(ctx context.Context) (*DeviceCodeResponse, error) {
 	form := url.Values{
 		"client_id": {c.config.ClientID},
 		"scope":     {strings.Join(c.config.Scopes, " ")},
+	}
+	if c.config.Audience != "" {
+		form.Set("audience", c.config.Audience)
 	}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost,
@@ -89,8 +103,7 @@ func (c *OAuthClient) RequestDeviceCode(ctx context.Context) (*DeviceCodeRespons
 	if err != nil {
 		return nil, fmt.Errorf("create device code request: %w", err)
 	}
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.Header.Set("Accept", "application/json")
+	setOAuthHeaders(req)
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
@@ -165,8 +178,7 @@ func (c *OAuthClient) pollOnce(ctx context.Context, form url.Values) (*OAuthToke
 	if err != nil {
 		return nil, false, fmt.Errorf("create token request: %w", err)
 	}
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.Header.Set("Accept", "application/json")
+	setOAuthHeaders(req)
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
