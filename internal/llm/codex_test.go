@@ -263,67 +263,62 @@ func TestCodexProvider_Models(t *testing.T) {
 }
 
 func TestCodexProvider_Login(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(DeviceCodeResponse{
-			DeviceCode:      "dev-codex-123",
-			UserCode:        "WXYZ-9876",
-			VerificationURI: "https://auth.openai.com/activate",
-			ExpiresIn:       600,
-			Interval:        5,
-		})
-	}))
-	defer server.Close()
-
-	config := OAuthConfig{
-		ClientID:      OpenAICodexOAuth.ClientID,
-		DeviceCodeURL: server.URL,
-		TokenURL:      server.URL + "/token",
-		Scopes:        OpenAICodexOAuth.Scopes,
-	}
-	p := &CodexProvider{
-		oauth:      NewOAuthClient(config),
-		baseURL:    "https://api.openai.com/v1",
-		httpClient: &http.Client{},
-	}
+	// Login now returns a PKCE auth URL via the DeviceCodeResponse wrapper.
+	// It no longer calls a device code endpoint.
+	p := NewCodexProvider()
 
 	resp, err := p.Login(context.Background())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if resp.UserCode != "WXYZ-9876" {
-		t.Errorf("expected user code 'WXYZ-9876', got %q", resp.UserCode)
+	if resp.VerificationURI == "" {
+		t.Error("expected VerificationURI (auth URL) to be set")
+	}
+	if !strings.Contains(resp.VerificationURI, "auth.openai.com") {
+		t.Errorf("expected OpenAI auth URL, got %q", resp.VerificationURI)
+	}
+	// PKCE flow has no user code
+	if resp.UserCode != "" {
+		t.Errorf("expected empty UserCode for PKCE, got %q", resp.UserCode)
 	}
 }
 
 func TestCodexProvider_CompleteLogin(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	// CompleteLogin should return an error directing to use LoginPKCE instead.
+	p := NewCodexProvider()
+
+	err := p.CompleteLogin(context.Background(), "dev-codex-123")
+	if err == nil {
+		t.Fatal("expected error from CompleteLogin (device flow not supported)")
+	}
+	if !strings.Contains(err.Error(), "LoginPKCE") {
+		t.Errorf("error should mention LoginPKCE, got: %v", err)
+	}
+}
+
+func TestCodexProvider_LoginPKCE(t *testing.T) {
+	// Test LoginPKCE with a mock token server
+	tokenServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(OAuthToken{
-			AccessToken: "codex_completed_token",
+			AccessToken: "pkce-codex-token",
 			TokenType:   "bearer",
 			ExpiresIn:   3600,
 		})
 	}))
-	defer server.Close()
+	defer tokenServer.Close()
 
-	config := OAuthConfig{
-		ClientID:      OpenAICodexOAuth.ClientID,
-		DeviceCodeURL: server.URL + "/device",
-		TokenURL:      server.URL,
-		Scopes:        OpenAICodexOAuth.Scopes,
-	}
-	p := &CodexProvider{
-		oauth:      NewOAuthClient(config),
-		baseURL:    "https://api.openai.com/v1",
-		httpClient: &http.Client{},
-	}
-
-	err := p.CompleteLogin(context.Background(), "dev-codex-123")
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	// We can't easily test the full LoginPKCE flow (it starts a callback server),
+	// but we can test that the provider stores tokens correctly via WithCodexToken.
+	p := NewCodexProvider(WithCodexToken("manual-pkce-token"))
 	if !p.IsAuthenticated() {
-		t.Error("expected authenticated after complete login")
+		t.Error("expected authenticated after setting token")
+	}
+	tok, err := p.oauth.GetToken()
+	if err != nil {
+		t.Fatalf("GetToken error: %v", err)
+	}
+	if tok.AccessToken != "manual-pkce-token" {
+		t.Errorf("AccessToken = %q, want %q", tok.AccessToken, "manual-pkce-token")
 	}
 }

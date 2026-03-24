@@ -154,15 +154,42 @@ func (p *CodexProvider) Stream(ctx context.Context, req ChatRequest) (<-chan Str
 	return ch, nil
 }
 
-// Login initiates the OAuth device flow and returns device code info for display.
+// Login returns a DeviceCodeResponse with the PKCE auth URL for display.
+// OpenAI Codex does NOT support device code flow — this wraps the PKCE flow
+// into the DeviceCodeResponse shape for backward compatibility with the CLI.
 func (p *CodexProvider) Login(ctx context.Context) (*DeviceCodeResponse, error) {
-	return p.oauth.RequestDeviceCode(ctx)
+	pkce := NewPKCEClient(OpenAICodexPKCE)
+	verifier, err := GenerateVerifier()
+	if err != nil {
+		return nil, fmt.Errorf("codex login: %w", err)
+	}
+	state := fmt.Sprintf("blackcat-%d", time.Now().UnixNano())
+	authURL := pkce.BuildAuthorizationURL(verifier, state)
+
+	return &DeviceCodeResponse{
+		VerificationURI: authURL,
+		UserCode:        "", // PKCE has no user code
+		ExpiresIn:       600,
+		Interval:        0,
+	}, nil
 }
 
-// CompleteLogin polls for the token after the user has authorized the device.
+// CompleteLogin is a no-op for Codex. Use LoginPKCE instead.
 func (p *CodexProvider) CompleteLogin(ctx context.Context, deviceCode string) error {
-	_, err := p.oauth.PollForToken(ctx, deviceCode, 5)
-	return err
+	return fmt.Errorf("codex does not support device code polling; use LoginPKCE instead")
+}
+
+// LoginPKCE performs the full PKCE browser-based OAuth flow for OpenAI Codex.
+// If openBrowser is true, it attempts to open the system browser.
+// Returns the obtained token and the auth URL (for manual/remote use).
+func (p *CodexProvider) LoginPKCE(ctx context.Context, openBrowser bool) (*OAuthToken, string, error) {
+	pkce := NewPKCEClient(OpenAICodexPKCE)
+	token, authURL, err := pkce.Login(ctx, openBrowser)
+	if err != nil {
+		return nil, authURL, err
+	}
+	p.oauth.SetToken(token)
+	return token, authURL, nil
 }
 
 // IsAuthenticated returns true if the provider has a valid OAuth token.

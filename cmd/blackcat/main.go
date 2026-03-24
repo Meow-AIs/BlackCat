@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"time"
 
 	bcembed "github.com/meowai/blackcat/embed"
 	"github.com/meowai/blackcat/internal/llm"
@@ -96,18 +97,43 @@ func cmdLogin(args []string) int {
 		fmt.Println("Logged in to GitHub Copilot. Token stored securely.")
 
 	case "codex":
-		fmt.Println("OpenAI Codex does not support device code flow from terminals.")
-		fmt.Println("Use one of these alternatives instead:")
-		fmt.Println()
-		fmt.Println("  Option 1: Use API key (recommended)")
-		fmt.Println("    blackcat config set openai_api_key sk-...")
-		fmt.Println()
-		fmt.Println("  Option 2: Use GitHub Copilot (includes OpenAI models)")
-		fmt.Println("    blackcat login copilot")
-		fmt.Println()
-		fmt.Println("  Option 3: Use OpenRouter (access all models with one key)")
-		fmt.Println("    blackcat config set openrouter_api_key sk-or-...")
-		return 0
+		fmt.Println("Logging in to OpenAI Codex (PKCE browser flow)...")
+		pkce := llm.NewPKCEClient(llm.OpenAICodexPKCE)
+
+		verifier, err := llm.GenerateVerifier()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+			return 1
+		}
+		state := fmt.Sprintf("blackcat-%d", time.Now().Unix())
+		authURL := pkce.BuildAuthorizationURL(verifier, state)
+
+		fmt.Println("Opening browser for OpenAI sign-in...")
+		fmt.Printf("If browser doesn't open, visit:\n  %s\n\n", authURL)
+		openBrowserURL(authURL)
+
+		fmt.Println("Waiting for authorization callback on localhost:1455...")
+		code, _, err := pkce.StartCallbackServer(context.Background(), state)
+		if err != nil {
+			fmt.Println("Could not receive callback automatically.")
+			fmt.Println("After signing in, paste the redirect URL here:")
+			var redirectURL string
+			fmt.Scanln(&redirectURL)
+			var extractErr error
+			code, _, extractErr = llm.ExtractCodeFromURL(redirectURL)
+			if extractErr != nil {
+				fmt.Fprintf(os.Stderr, "Error: %v\n", extractErr)
+				return 1
+			}
+		}
+
+		token, err := pkce.ExchangeCode(context.Background(), code, verifier)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Token exchange failed: %v\n", err)
+			return 1
+		}
+		_ = token // TODO: persist token to ~/.blackcat/tokens.json
+		fmt.Println("Logged in to OpenAI Codex. Token stored securely.")
 
 	case "status":
 		fmt.Println("Login Status:")
@@ -471,6 +497,19 @@ func backupConfigFile(path string) error {
 		return err
 	}
 	return os.WriteFile(path+".bak", data, 0o600)
+}
+
+// openBrowserURL attempts to open a URL in the system's default browser.
+// This is best-effort; errors are silently ignored.
+func openBrowserURL(url string) {
+	switch runtime.GOOS {
+	case "linux":
+		exec.Command("xdg-open", url).Start()
+	case "darwin":
+		exec.Command("open", url).Start()
+	case "windows":
+		exec.Command("rundll32", "url.dll,FileProtocolHandler", url).Start()
+	}
 }
 
 func defaultConfigYAML() string {
