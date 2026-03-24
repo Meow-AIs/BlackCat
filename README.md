@@ -10,7 +10,7 @@
 
 <p align="center">
   Scan secrets &middot; Harden pipelines &middot; Design architecture &middot; Generate Terraform &middot; Review compliance &middot; Optimize costs<br/>
-  <em>Open source AI agent by <a href="https://github.com/meowai">MeowAI</a> — 8 LLM providers, embedded memory, runs anywhere.</em>
+  <em>Open source AI agent by <a href="https://github.com/Meow-AIs">MeowAI</a> — 8 LLM providers, embedded memory, runs anywhere.</em>
 </p>
 
 <p align="center">
