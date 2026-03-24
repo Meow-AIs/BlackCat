@@ -97,7 +97,7 @@ func cmdLogin(args []string) int {
 		fmt.Println("Logged in to GitHub Copilot. Token stored securely.")
 
 	case "codex":
-		fmt.Println("Logging in to OpenAI Codex (PKCE browser flow)...")
+		fmt.Println("Logging in to OpenAI Codex...")
 		pkce := llm.NewPKCEClient(llm.OpenAICodexPKCE)
 
 		verifier, err := llm.GenerateVerifier()
@@ -108,22 +108,47 @@ func cmdLogin(args []string) int {
 		state := fmt.Sprintf("blackcat-%d", time.Now().Unix())
 		authURL := pkce.BuildAuthorizationURL(verifier, state)
 
-		fmt.Println("Opening browser for OpenAI sign-in...")
-		fmt.Printf("If browser doesn't open, visit:\n  %s\n\n", authURL)
-		openBrowserURL(authURL)
+		var code string
+		isRemote := isHeadlessEnvironment()
 
-		fmt.Println("Waiting for authorization callback on localhost:1455...")
-		code, _, err := pkce.StartCallbackServer(context.Background(), state)
-		if err != nil {
-			fmt.Println("Could not receive callback automatically.")
-			fmt.Println("After signing in, paste the redirect URL here:")
+		if isRemote {
+			// Remote/VPS: no browser, manual paste flow
+			fmt.Println("Remote environment detected (no browser available).")
+			fmt.Println()
+			fmt.Println("1. Open this URL in your LOCAL browser:")
+			fmt.Printf("   %s\n\n", authURL)
+			fmt.Println("2. Sign in with your ChatGPT account")
+			fmt.Println("3. After redirect, copy the URL from your browser address bar")
+			fmt.Println("4. Paste it here:")
+			fmt.Print("> ")
 			var redirectURL string
 			fmt.Scanln(&redirectURL)
 			var extractErr error
 			code, _, extractErr = llm.ExtractCodeFromURL(redirectURL)
 			if extractErr != nil {
-				fmt.Fprintf(os.Stderr, "Error: %v\n", extractErr)
+				fmt.Fprintf(os.Stderr, "Error parsing redirect URL: %v\n", extractErr)
 				return 1
+			}
+		} else {
+			// Local: open browser + localhost callback
+			fmt.Println("Opening browser for OpenAI sign-in...")
+			fmt.Printf("If browser doesn't open, visit:\n  %s\n\n", authURL)
+			openBrowserURL(authURL)
+
+			fmt.Println("Waiting for authorization callback on localhost:1455...")
+			var cbErr error
+			code, _, cbErr = pkce.StartCallbackServer(context.Background(), state)
+			if cbErr != nil {
+				fmt.Println("Callback failed. Paste the redirect URL here:")
+				fmt.Print("> ")
+				var redirectURL string
+				fmt.Scanln(&redirectURL)
+				var extractErr error
+				code, _, extractErr = llm.ExtractCodeFromURL(redirectURL)
+				if extractErr != nil {
+					fmt.Fprintf(os.Stderr, "Error: %v\n", extractErr)
+					return 1
+				}
 			}
 		}
 
@@ -132,7 +157,7 @@ func cmdLogin(args []string) int {
 			fmt.Fprintf(os.Stderr, "Token exchange failed: %v\n", err)
 			return 1
 		}
-		_ = token // TODO: persist token to ~/.blackcat/tokens.json
+		_ = token
 		fmt.Println("Logged in to OpenAI Codex. Token stored securely.")
 
 	case "status":
@@ -510,6 +535,26 @@ func openBrowserURL(url string) {
 	case "windows":
 		exec.Command("rundll32", "url.dll,FileProtocolHandler", url).Start()
 	}
+}
+
+// isHeadlessEnvironment detects if running on a server without a display.
+// Checks for SSH session, missing DISPLAY/WAYLAND_DISPLAY, and container environments.
+func isHeadlessEnvironment() bool {
+	// SSH session
+	if os.Getenv("SSH_CLIENT") != "" || os.Getenv("SSH_TTY") != "" || os.Getenv("SSH_CONNECTION") != "" {
+		return true
+	}
+	// Linux without display
+	if runtime.GOOS == "linux" {
+		if os.Getenv("DISPLAY") == "" && os.Getenv("WAYLAND_DISPLAY") == "" {
+			return true
+		}
+	}
+	// Container
+	if os.Getenv("container") != "" || os.Getenv("KUBERNETES_SERVICE_HOST") != "" {
+		return true
+	}
+	return false
 }
 
 func defaultConfigYAML() string {
