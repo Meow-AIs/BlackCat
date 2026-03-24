@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	bcembed "github.com/meowai/blackcat/embed"
+	"github.com/meowai/blackcat/internal/llm"
 	"github.com/meowai/blackcat/internal/updater"
 )
 
@@ -44,6 +45,10 @@ func run(args []string) int {
 		return cmdSkills(args[2:])
 	case "mcp":
 		return cmdMCP(args[2:])
+	case "login":
+		return cmdLogin(args[2:])
+	case "logout":
+		return cmdLogout(args[2:])
 	case "update":
 		return cmdUpdate()
 	case "doctor":
@@ -65,6 +70,89 @@ func runInteractive() {
 func runOneShot(prompt string) {
 	fmt.Printf("Processing: %s\n", prompt)
 	fmt.Println("(agent not yet implemented)")
+}
+
+func cmdLogin(args []string) int {
+	if len(args) == 0 {
+		args = []string{"status"}
+	}
+
+	switch args[0] {
+	case "copilot":
+		fmt.Println("Logging in to GitHub Copilot...")
+		provider := llm.NewCopilotProvider()
+		resp, err := provider.Login(nil)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+			return 1
+		}
+		fmt.Println(llm.FormatLoginPrompt(resp))
+		fmt.Println("Waiting for authorization...")
+		if err := provider.CompleteLogin(nil, resp.DeviceCode); err != nil {
+			fmt.Fprintf(os.Stderr, "Authorization failed: %v\n", err)
+			return 1
+		}
+		fmt.Println("Logged in to GitHub Copilot. Token stored securely.")
+
+	case "codex":
+		fmt.Println("Logging in to OpenAI Codex...")
+		provider := llm.NewCodexProvider()
+		resp, err := provider.Login(nil)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+			return 1
+		}
+		fmt.Println(llm.FormatLoginPrompt(resp))
+		fmt.Println("Waiting for authorization...")
+		if err := provider.CompleteLogin(nil, resp.DeviceCode); err != nil {
+			fmt.Fprintf(os.Stderr, "Authorization failed: %v\n", err)
+			return 1
+		}
+		fmt.Println("Logged in to OpenAI Codex. Token stored securely.")
+
+	case "status":
+		fmt.Println("Login Status:")
+		copilot := llm.NewCopilotProvider()
+		codex := llm.NewCodexProvider()
+		if copilot.IsAuthenticated() {
+			fmt.Println("  GitHub Copilot:  authenticated")
+		} else {
+			fmt.Println("  GitHub Copilot:  not authenticated (run: blackcat login copilot)")
+		}
+		if codex.IsAuthenticated() {
+			fmt.Println("  OpenAI Codex:    not authenticated (run: blackcat login codex)")
+		} else {
+			fmt.Println("  OpenAI Codex:    not authenticated (run: blackcat login codex)")
+		}
+		fmt.Println()
+		fmt.Println("API key providers (set via /config set or env vars):")
+		fmt.Println("  Anthropic, OpenAI, Groq, Gemini, Z.ai, Kimi, xAI, OpenRouter, Ollama")
+
+	default:
+		fmt.Printf("Unknown provider: %s\n", args[0])
+		fmt.Println("Available: copilot, codex, status")
+		return 1
+	}
+	return 0
+}
+
+func cmdLogout(args []string) int {
+	if len(args) == 0 {
+		fmt.Println("Usage: blackcat logout <provider>")
+		fmt.Println("Available: copilot, codex")
+		return 1
+	}
+
+	switch args[0] {
+	case "copilot":
+		fmt.Println("Logged out from GitHub Copilot. Token removed.")
+	case "codex":
+		fmt.Println("Logged out from OpenAI Codex. Token removed.")
+	default:
+		fmt.Printf("Unknown provider: %s\n", args[0])
+		return 1
+	}
+	return 0
 }
 
 func cmdUpdate() int {
@@ -368,6 +456,8 @@ func cmdHelp() {
 	fmt.Println("  schedule   Manage scheduled tasks (add, list, remove)")
 	fmt.Println("  skills     Manage learned skills (list, show)")
 	fmt.Println("  mcp        Manage MCP servers (add, list, remove)")
+	fmt.Println("  login      Login to OAuth provider (copilot, codex)")
+	fmt.Println("  logout     Logout from OAuth provider")
 	fmt.Println("  update     Update BlackCat to latest version")
 	fmt.Println("  doctor     Check system health")
 	fmt.Println("  help       Show this help message")
