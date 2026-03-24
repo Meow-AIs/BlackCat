@@ -1,6 +1,7 @@
 package llm
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -63,11 +64,13 @@ var GitHubCopilotOAuth = OAuthConfig{
 }
 
 // OpenAICodexOAuth is the predefined OAuth config for OpenAI Codex.
+// NOTE: OpenAI does NOT support device code flow. They use PKCE browser flow only.
+// This config is kept for reference. Use API key instead: blackcat config set openai_api_key
 var OpenAICodexOAuth = OAuthConfig{
 	ClientID:      "app_EMoamEEZ73f0CkXaXp7hrann",
-	DeviceCodeURL: "https://auth.openai.com/oauth/device/code",
+	DeviceCodeURL: "", // OpenAI has no device code endpoint
 	TokenURL:      "https://auth.openai.com/oauth/token",
-	Scopes:        []string{"openai.chat.completions"},
+	Scopes:        []string{"openid", "profile", "email", "offline_access"},
 	Audience:      "https://api.openai.com/v1",
 }
 
@@ -90,20 +93,29 @@ func setOAuthHeaders(req *http.Request) {
 
 // RequestDeviceCode initiates the device flow by requesting a device code.
 func (c *OAuthClient) RequestDeviceCode(ctx context.Context) (*DeviceCodeResponse, error) {
-	form := url.Values{
-		"client_id": {c.config.ClientID},
-		"scope":     {strings.Join(c.config.Scopes, " ")},
-	}
-	if c.config.Audience != "" {
-		form.Set("audience", c.config.Audience)
+	if c.config.DeviceCodeURL == "" {
+		return nil, fmt.Errorf("this provider does not support device code flow.\n" +
+			"Use API key instead: blackcat config set openai_api_key sk-...")
 	}
 
+	// Build request body as JSON (GitHub requires JSON, not form-encoded)
+	bodyMap := map[string]string{
+		"client_id": c.config.ClientID,
+		"scope":     strings.Join(c.config.Scopes, " "),
+	}
+	if c.config.Audience != "" {
+		bodyMap["audience"] = c.config.Audience
+	}
+	bodyJSON, _ := json.Marshal(bodyMap)
+
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost,
-		c.config.DeviceCodeURL, strings.NewReader(form.Encode()))
+		c.config.DeviceCodeURL, bytes.NewReader(bodyJSON))
 	if err != nil {
 		return nil, fmt.Errorf("create device code request: %w", err)
 	}
-	setOAuthHeaders(req)
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("User-Agent", "BlackCat/1.0")
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {

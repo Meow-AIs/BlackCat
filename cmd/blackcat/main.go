@@ -96,20 +96,18 @@ func cmdLogin(args []string) int {
 		fmt.Println("Logged in to GitHub Copilot. Token stored securely.")
 
 	case "codex":
-		fmt.Println("Logging in to OpenAI Codex...")
-		provider := llm.NewCodexProvider()
-		resp, err := provider.Login(context.Background())
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-			return 1
-		}
-		fmt.Println(llm.FormatLoginPrompt(resp))
-		fmt.Println("Waiting for authorization...")
-		if err := provider.CompleteLogin(context.Background(), resp.DeviceCode); err != nil {
-			fmt.Fprintf(os.Stderr, "Authorization failed: %v\n", err)
-			return 1
-		}
-		fmt.Println("Logged in to OpenAI Codex. Token stored securely.")
+		fmt.Println("OpenAI Codex does not support device code flow from terminals.")
+		fmt.Println("Use one of these alternatives instead:")
+		fmt.Println()
+		fmt.Println("  Option 1: Use API key (recommended)")
+		fmt.Println("    blackcat config set openai_api_key sk-...")
+		fmt.Println()
+		fmt.Println("  Option 2: Use GitHub Copilot (includes OpenAI models)")
+		fmt.Println("    blackcat login copilot")
+		fmt.Println()
+		fmt.Println("  Option 3: Use OpenRouter (access all models with one key)")
+		fmt.Println("    blackcat config set openrouter_api_key sk-or-...")
+		return 0
 
 	case "status":
 		fmt.Println("Login Status:")
