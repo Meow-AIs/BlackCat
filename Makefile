@@ -4,10 +4,15 @@ COMMIT=$(shell git rev-parse --short HEAD 2>/dev/null || echo "dev")
 BUILD_TIME=$(shell date -u '+%Y-%m-%dT%H:%M:%SZ' 2>/dev/null || echo "unknown")
 LDFLAGS=-ldflags "-s -w -X main.version=$(VERSION) -X main.commit=$(COMMIT)"
 
-.PHONY: build build-all test test-integration test-e2e bench lint clean fmt vet
+.PHONY: build build-all test test-integration test-e2e bench lint clean fmt vet model
 
 build:
 	CGO_ENABLED=1 go build $(LDFLAGS) -o $(BINARY) ./cmd/blackcat/
+
+build-with-model: model build
+
+model:
+	@bash scripts/download-model.sh
 
 build-all:
 	# Linux amd64

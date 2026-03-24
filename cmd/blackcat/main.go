@@ -320,17 +320,20 @@ func defaultConfigYAML() string {
 	return `# BlackCat Configuration
 # See: https://github.com/Meow-AIs/BlackCat
 
-# Default LLM provider
-provider: openai
+# Default LLM provider (anthropic, openai, ollama, openrouter, groq, zai, kimi, xai)
+provider: anthropic
 
 # Provider configurations
 providers:
-  openai:
-    model: gpt-4o
-    # api_key: (set via OPENAI_API_KEY env var)
   anthropic:
-    model: claude-sonnet-4-20250514
-    # api_key: (set via ANTHROPIC_API_KEY env var)
+    model: claude-sonnet-4-6
+    # api_key: (use /config set or ANTHROPIC_API_KEY env var)
+  openai:
+    model: gpt-4.1
+    # api_key: (use /config set or OPENAI_API_KEY env var)
+  ollama:
+    base_url: http://localhost:11434
+    model: qwen2.5:32b
 
 # Memory settings
 memory:

@@ -27,7 +27,13 @@ jobs:
           sudo apt-get install -y gcc gcc-aarch64-linux-gnu gcc-mingw-w64-x86-64
 
       - name: Set version from tag
-        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          echo "VERSION=${TAG#v}" >> $GITHUB_ENV
+          echo "TAG=$TAG" >> $GITHUB_ENV
+
+      - name: Download embedding model
+        run: bash scripts/download-model.sh
 
       - name: Build Linux amd64
         env:
